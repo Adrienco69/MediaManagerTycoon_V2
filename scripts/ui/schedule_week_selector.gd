@@ -99,7 +99,7 @@ static func _select_week(
 static func _get_week_text(week_number: int) -> String:
 	var month_index: int = _get_month_index_for_week(week_number)
 	var palette: Dictionary = CalendarThemeScript.PALETTES[month_index]
-	return "Semaine %d — %s" % [week_number, String(palette["name"])]
+	return "Semaine %d | %s" % [week_number, String(palette["name"])]
 
 
 static func _get_month_index_for_week(week_number: int) -> int:
