@@ -1,12 +1,12 @@
 class_name ChannelTableBuilder
 extends RefCounted
 
-const COLUMN_WIDTHS: Array[float] = [110.0, 260.0, 220.0, 150.0]
+const COLUMN_WIDTHS: Array[float] = [110.0, 240.0, 210.0, 150.0, 220.0]
 
 
 static func build(parent: VBoxContainer, channel: Dictionary, on_edit_guide: Callable) -> void:
 	var table: GridContainer = GridContainer.new()
-	table.columns = 4
+	table.columns = 5
 	table.add_theme_constant_override("h_separation", 0)
 	table.add_theme_constant_override("v_separation", 0)
 	parent.add_child(table)
@@ -15,11 +15,13 @@ static func build(parent: VBoxContainer, channel: Dictionary, on_edit_guide: Cal
 	_add_text_cell(table, "Nom", 1, true)
 	_add_text_cell(table, "Thème", 2, true)
 	_add_text_cell(table, "Guide TV", 3, true)
+	_add_text_cell(table, "Lancement chaîne", 4, true)
 
 	_add_text_cell(table, str(int(channel.get("mmtn_number", 2))), 0, false)
 	_add_text_cell(table, String(channel.get("name", "")), 1, false)
 	_add_text_cell(table, "%s 🔒" % String(channel.get("theme", "Généraliste")), 2, false)
 	_add_button_cell(table, "Modifier", 3, on_edit_guide)
+	_add_text_cell(table, String(channel.get("launch_date", "Lundi 1 Floréal 0001")), 4, false)
 
 
 static func _add_text_cell(table: GridContainer, text: String, column: int, is_header: bool) -> void:
