@@ -1,6 +1,7 @@
 extends Node
 
 const PlayerChannelManagerScript = preload("res://scripts/core/player_channel_manager.gd")
+const MMTNRegistryScript = preload("res://scripts/core/mmtn_registry.gd")
 
 signal time_changed
 signal credits_changed(new_value: int)
@@ -37,10 +38,6 @@ const MONTHS := [
 
 const STARTING_CREDITS := 1200
 
-# Vitesses validées :
-# - Heure : 10 secondes réelles = 1 heure de jeu.
-# - Jour : 20 secondes réelles = 1 journée de jeu.
-# - Semaine : 30 secondes réelles = 1 semaine de jeu.
 const GAME_MINUTES_PER_REAL_SECOND := {
 	TimeMode.HOUR: 6.0,
 	TimeMode.DAY: 72.0,
@@ -119,6 +116,10 @@ func get_first_channel() -> Dictionary:
 
 func get_player_channels() -> Array[Dictionary]:
 	return _player_channel_manager.get_channels()
+
+
+func get_zap_channels() -> Array[Dictionary]:
+	return MMTNRegistryScript.get_initial_channels(get_first_channel(), company_name)
 
 
 func set_time_mode(new_mode: TimeMode) -> void:
