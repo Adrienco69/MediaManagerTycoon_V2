@@ -237,14 +237,37 @@ func _show_grid() -> void:
 		page_description.text = "Créez d'abord votre première chaîne."
 		return
 
-	TVGridPageControllerScript.render(content_container, page_description, channel)
+	TVGridPageControllerScript.render(
+		content_container,
+		page_description,
+		channel,
+		true
+	)
 
 
 func _show_zap() -> void:
 	_clear_dynamic_pages()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
 	page_title.text = "Zap'Chaine"
-	ZapPageControllerScript.render(content_container, page_description, GameState.get_zap_channels())
+	ZapPageControllerScript.render(
+		content_container,
+		page_description,
+		GameState.get_zap_channels(),
+		_show_zap_channel_schedule
+	)
+
+
+func _show_zap_channel_schedule(channel: Dictionary) -> void:
+	_clear_dynamic_pages()
+	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
+	page_title.text = "Zap'Chaine — %s" % String(channel.get("name", ""))
+	TVGridPageControllerScript.render(
+		content_container,
+		page_description,
+		channel,
+		false,
+		_show_zap
+	)
 
 
 func _show_productions() -> void:
