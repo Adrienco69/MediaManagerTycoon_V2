@@ -1,0 +1,151 @@
+class_name CalendarClock
+extends RefCounted
+
+enum TimeMode {
+	PAUSED,
+	HOUR,
+	DAY,
+	WEEK
+}
+
+const DAYS: Array[String] = [
+	"Lundi",
+	"Mardi",
+	"Mercredi",
+	"Jeudi",
+	"Vendredi",
+	"Samedi",
+	"Dimanche"
+]
+
+const MONTHS: Array[Dictionary] = [
+	{"name": "Floréal", "weeks": 7},
+	{"name": "Clôture", "weeks": 8},
+	{"name": "Crépuscule", "weeks": 7},
+	{"name": "Zénith", "weeks": 8},
+	{"name": "Origine", "weeks": 7},
+	{"name": "Essor", "weeks": 8},
+	{"name": "Brumal", "weeks": 7}
+]
+
+const GAME_MINUTES_PER_REAL_SECOND: Dictionary = {
+	TimeMode.HOUR: 6.0,
+	TimeMode.DAY: 72.0,
+	TimeMode.WEEK: 336.0
+}
+
+var year: int = 1
+var month_index: int = 0
+var week_in_month: int = 1
+var week_in_year: int = 1
+var day_in_week: int = 1
+var hour: int = 0
+var minute: int = 0
+var time_mode: TimeMode = TimeMode.PAUSED
+var _minute_buffer: float = 0.0
+
+
+func reset() -> void:
+	year = 1
+	month_index = 0
+	week_in_month = 1
+	week_in_year = 1
+	day_in_week = 1
+	hour = 0
+	minute = 0
+	time_mode = TimeMode.PAUSED
+	_minute_buffer = 0.0
+
+
+func process(delta: float) -> bool:
+	if time_mode == TimeMode.PAUSED:
+		return false
+
+	var speed: float = float(GAME_MINUTES_PER_REAL_SECOND[time_mode])
+	_minute_buffer += delta * speed
+	var whole_minutes: int = int(floor(_minute_buffer))
+	if whole_minutes <= 0:
+		return false
+
+	_minute_buffer -= float(whole_minutes)
+	advance_minutes(whole_minutes)
+	return true
+
+
+func set_time_mode(new_mode: TimeMode) -> bool:
+	if time_mode == new_mode:
+		return false
+	time_mode = new_mode
+	return true
+
+
+func advance_minutes(amount: int) -> void:
+	if amount <= 0:
+		return
+
+	var total_minutes: int = minute + amount
+	minute = total_minutes % 60
+	var total_hours: int = hour + int(total_minutes / 60)
+	hour = total_hours % 24
+
+	var days_to_advance: int = int(total_hours / 24)
+	for _i: int in range(days_to_advance):
+		_advance_one_day()
+
+
+func _advance_one_day() -> void:
+	day_in_week += 1
+	if day_in_week <= 7:
+		return
+
+	day_in_week = 1
+	week_in_month += 1
+	week_in_year += 1
+	var current_month_weeks: int = int(MONTHS[month_index]["weeks"])
+	if week_in_month <= current_month_weeks:
+		return
+
+	week_in_month = 1
+	month_index += 1
+	if month_index < MONTHS.size():
+		return
+
+	month_index = 0
+	year += 1
+	week_in_year = 1
+
+
+func get_day_name() -> String:
+	return DAYS[day_in_week - 1]
+
+
+func get_month_name() -> String:
+	return String(MONTHS[month_index]["name"])
+
+
+func get_day_of_month() -> int:
+	return ((week_in_month - 1) * 7) + day_in_week
+
+
+func get_date_text() -> String:
+	return "%s %d %s %04d" % [get_day_name(), get_day_of_month(), get_month_name(), year]
+
+
+func get_week_text() -> String:
+	return "Semaine %d/52" % week_in_year
+
+
+func get_time_text() -> String:
+	return "%02d:%02d" % [hour, minute]
+
+
+func get_speed_text() -> String:
+	match time_mode:
+		TimeMode.HOUR:
+			return "Heure"
+		TimeMode.DAY:
+			return "Jour"
+		TimeMode.WEEK:
+			return "Semaine"
+		_:
+			return "Pause"
