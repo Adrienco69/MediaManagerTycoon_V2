@@ -79,14 +79,18 @@ const PALETTES := [
 
 
 static func get_palette(month_index: int, day_of_month: int, weeks_in_month: int) -> Dictionary:
-	var safe_index := posmod(month_index, PALETTES.size())
-	var next_index := (safe_index + 1) % PALETTES.size()
+	var safe_index: int = posmod(month_index, PALETTES.size())
+	var next_index: int = (safe_index + 1) % PALETTES.size()
 	var current: Dictionary = PALETTES[safe_index]
 	var next: Dictionary = PALETTES[next_index]
-	var total_days := max(weeks_in_month * 7, 1)
-	var raw_progress := clamp(float(day_of_month - 1) / float(max(total_days - 1, 1)), 0.0, 1.0)
+	var total_days: int = maxi(weeks_in_month * 7, 1)
+	var raw_progress: float = clampf(
+		float(day_of_month - 1) / float(maxi(total_days - 1, 1)),
+		0.0,
+		1.0
+	)
 	# Smoothstep : la transition reste douce au début et à la fin du mois.
-	var progress := raw_progress * raw_progress * (3.0 - (2.0 * raw_progress))
+	var progress: float = raw_progress * raw_progress * (3.0 - (2.0 * raw_progress))
 
 	var current_background: Color = current["background"]
 	var current_surface: Color = current["surface"]
