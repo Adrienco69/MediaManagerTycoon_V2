@@ -3,13 +3,18 @@ extends RefCounted
 
 const INITIAL_LAUNCH_DATE: String = "Lundi 1 Floréal 0001"
 
+var _history: Array[Dictionary] = []
 
-static func get_initial_channels(player_channel: Dictionary, player_company: String) -> Array[Dictionary]:
-	var channels: Array[Dictionary] = []
-	if player_channel.is_empty():
-		return channels
 
-	channels.append({
+func reset() -> void:
+	_history.clear()
+
+
+func register_initial_channels(player_channel: Dictionary, player_company: String) -> void:
+	if player_channel.is_empty() or not _history.is_empty():
+		return
+
+	_history.append({
 		"mmtn_number": 1,
 		"name": "MG1",
 		"group": "Media Groupe",
@@ -21,10 +26,37 @@ static func get_initial_channels(player_channel: Dictionary, player_company: Str
 
 	var player_entry: Dictionary = player_channel.duplicate(true)
 	player_entry["group"] = player_company
+	player_entry["launch_date"] = String(player_entry.get("launch_date", INITIAL_LAUNCH_DATE))
 	player_entry["closed_date"] = String(player_entry.get("closed_date", ""))
 	player_entry["is_open"] = bool(player_entry.get("is_open", true))
-	channels.append(player_entry)
-	return channels
+	_history.append(player_entry)
+
+
+func register_channel(channel: Dictionary) -> void:
+	if channel.is_empty():
+		return
+
+	var entry: Dictionary = channel.duplicate(true)
+	entry["closed_date"] = String(entry.get("closed_date", ""))
+	entry["is_open"] = bool(entry.get("is_open", true))
+	_history.append(entry)
+
+
+func close_channel(mmtn_number: int, closed_date: String) -> bool:
+	for index: int in range(_history.size()):
+		if int(_history[index].get("mmtn_number", 0)) != mmtn_number:
+			continue
+		_history[index]["is_open"] = false
+		_history[index]["closed_date"] = closed_date
+		return true
+	return false
+
+
+func get_channels() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for channel: Dictionary in _history:
+		result.append(channel.duplicate(true))
+	return result
 
 
 static func get_status_text(channel: Dictionary) -> String:
