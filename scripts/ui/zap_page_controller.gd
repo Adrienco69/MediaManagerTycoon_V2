@@ -2,7 +2,7 @@ class_name ZapPageController
 extends RefCounted
 
 const DYNAMIC_NODE_NAME: String = "ZapDynamic"
-const COLUMN_WIDTHS: Array[float] = [100.0, 220.0, 240.0, 180.0, 220.0, 220.0]
+const COLUMN_WIDTHS: Array[float] = [85.0, 170.0, 185.0, 145.0, 190.0, 155.0, 150.0]
 
 
 static func render(
@@ -13,7 +13,7 @@ static func render(
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	page_description.text = "Historique des chaînes MMTN. Cliquez sur le nom d'une chaîne pour consulter son guide TV."
+	page_description.text = "Historique des chaînes MMTN. Utilisez « Voir la grille » pour consulter leur guide TV."
 
 	var dynamic: VBoxContainer = VBoxContainer.new()
 	dynamic.name = DYNAMIC_NODE_NAME
@@ -80,7 +80,7 @@ static func _build_table(
 		return
 
 	var table: GridContainer = GridContainer.new()
-	table.columns = 6
+	table.columns = 7
 	table.add_theme_constant_override("h_separation", 0)
 	table.add_theme_constant_override("v_separation", 0)
 	parent.add_child(table)
@@ -91,13 +91,12 @@ static func _build_table(
 	_add_cell(table, "Thème", 3, true)
 	_add_cell(table, "Lancement", 4, true)
 	_add_cell(table, "Fermeture" if show_closed else "État", 5, true)
+	_add_cell(table, "Guide TV", 6, true)
 
 	for channel: Dictionary in channels:
 		var selected_channel: Dictionary = channel.duplicate(true)
 		_add_cell(table, str(int(channel.get("mmtn_number", 0))), 0, false)
-		_add_channel_button(table, String(channel.get("name", "")), 1, func() -> void:
-			on_open_channel.call(selected_channel)
-		)
+		_add_cell(table, String(channel.get("name", "")), 1, false)
 		_add_cell(table, String(channel.get("group", "")), 2, false)
 		_add_cell(table, String(channel.get("theme", "Généraliste")), 3, false)
 		_add_cell(table, String(channel.get("launch_date", "")), 4, false)
@@ -105,6 +104,9 @@ static func _build_table(
 			_add_cell(table, "Fermée le %s" % String(channel.get("closed_date", "")), 5, false)
 		else:
 			_add_cell(table, "Ouverte", 5, false)
+		_add_guide_button(table, 6, func() -> void:
+			on_open_channel.call(selected_channel)
+		)
 
 
 static func _clear_holder(holder: VBoxContainer) -> void:
@@ -125,9 +127,8 @@ static func _add_cell(table: GridContainer, text: String, column: int, is_header
 	panel.add_child(label)
 
 
-static func _add_channel_button(
+static func _add_guide_button(
 	table: GridContainer,
-	text: String,
 	column: int,
 	on_pressed: Callable
 ) -> void:
@@ -135,10 +136,9 @@ static func _add_channel_button(
 	table.add_child(panel)
 
 	var button: Button = Button.new()
-	button.text = text
-	button.flat = true
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.text = "Voir la grille"
+	button.custom_minimum_size = Vector2(120, 36)
+	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	button.pressed.connect(on_pressed)
 	panel.add_child(button)
 
