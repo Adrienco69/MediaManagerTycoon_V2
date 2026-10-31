@@ -44,6 +44,8 @@ func _ready() -> void:
 		week_label,
 		date_container,
 		credits_label,
+		date_label,
+		time_label,
 		pause_button,
 		hour_button,
 		day_button,
