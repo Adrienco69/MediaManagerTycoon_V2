@@ -2,12 +2,14 @@ extends Node
 
 const PlayerChannelManagerScript = preload("res://scripts/core/player_channel_manager.gd")
 const MMTNRegistryScript = preload("res://scripts/core/mmtn_registry.gd")
+const ProductionManagerScript = preload("res://scripts/core/production_manager.gd")
 
 signal time_changed
 signal credits_changed(new_value: int)
 signal speed_changed(new_mode: int)
 signal identity_changed(player_name: String, company_name: String)
 signal channel_created(channel: Dictionary)
+signal programs_changed
 
 enum TimeMode {
 	PAUSED,
@@ -59,6 +61,7 @@ var time_mode: TimeMode = TimeMode.PAUSED
 var _minute_buffer: float = 0.0
 var _player_channel_manager: PlayerChannelManager = PlayerChannelManagerScript.new()
 var _mmtn_registry: MMTNRegistry = MMTNRegistryScript.new()
+var _production_manager: ProductionManager = ProductionManagerScript.new()
 
 
 func _ready() -> void:
@@ -93,11 +96,13 @@ func start_new_game(new_player_name: String, new_company_name: String) -> void:
 	_minute_buffer = 0.0
 	_player_channel_manager.reset()
 	_mmtn_registry.reset()
+	_production_manager.reset()
 
 	identity_changed.emit(player_name, company_name)
 	credits_changed.emit(credits)
 	time_changed.emit()
 	speed_changed.emit(time_mode)
+	programs_changed.emit()
 
 
 func has_started_game() -> bool:
@@ -118,6 +123,10 @@ func get_first_channel() -> Dictionary:
 
 func get_player_channels() -> Array[Dictionary]:
 	return _player_channel_manager.get_channels()
+
+
+func get_group_programs() -> Array[Dictionary]:
+	return _production_manager.get_programs()
 
 
 func get_zap_channels() -> Array[Dictionary]:
@@ -198,6 +207,8 @@ func _advance_one_day() -> void:
 
 func _on_channel_created(channel: Dictionary) -> void:
 	_mmtn_registry.register_initial_channels(channel, company_name)
+	_production_manager.assign_launch_programs(String(channel.get("name", "")))
+	programs_changed.emit()
 	channel_created.emit(channel)
 
 
