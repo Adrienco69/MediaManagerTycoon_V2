@@ -1,8 +1,9 @@
 class_name ZapPageController
 extends RefCounted
 
+const MMTNRegistryScript = preload("res://scripts/core/mmtn_registry.gd")
 const DYNAMIC_NODE_NAME: String = "ZapDynamic"
-const COLUMN_WIDTHS: Array[float] = [100.0, 220.0, 240.0, 180.0, 220.0]
+const COLUMN_WIDTHS: Array[float] = [100.0, 220.0, 240.0, 180.0, 220.0, 220.0]
 
 
 static func render(
@@ -13,7 +14,7 @@ static func render(
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	page_description.text = "Chaînes disponibles sur la MMTN. Cliquez sur le nom d'une chaîne pour consulter son guide TV."
+	page_description.text = "Historique des chaînes MMTN. Cliquez sur le nom d'une chaîne pour consulter son guide TV."
 
 	var dynamic: VBoxContainer = VBoxContainer.new()
 	dynamic.name = DYNAMIC_NODE_NAME
@@ -27,7 +28,7 @@ static func render(
 		return
 
 	var table: GridContainer = GridContainer.new()
-	table.columns = 5
+	table.columns = 6
 	table.add_theme_constant_override("h_separation", 0)
 	table.add_theme_constant_override("v_separation", 0)
 	dynamic.add_child(table)
@@ -37,6 +38,7 @@ static func render(
 	_add_cell(table, "Groupe", 2, true)
 	_add_cell(table, "Thème", 3, true)
 	_add_cell(table, "Lancement", 4, true)
+	_add_cell(table, "Statut", 5, true)
 
 	for channel: Dictionary in channels:
 		var selected_channel: Dictionary = channel.duplicate(true)
@@ -47,6 +49,7 @@ static func render(
 		_add_cell(table, String(channel.get("group", "")), 2, false)
 		_add_cell(table, String(channel.get("theme", "Généraliste")), 3, false)
 		_add_cell(table, String(channel.get("launch_date", "")), 4, false)
+		_add_cell(table, MMTNRegistryScript.get_status_text(channel), 5, false)
 
 
 static func clear(content_container: VBoxContainer) -> void:
