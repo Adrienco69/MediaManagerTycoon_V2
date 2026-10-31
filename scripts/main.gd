@@ -5,6 +5,8 @@ const StartScreenGradientScript = preload("res://scripts/ui/start_screen_gradien
 const TopBarLayoutScript = preload("res://scripts/ui/top_bar_layout.gd")
 const NavigationButtonStateScript = preload("res://scripts/ui/navigation_button_state.gd")
 const GroupPageControllerScript = preload("res://scripts/ui/group_page_controller.gd")
+const TVGridPageControllerScript = preload("res://scripts/ui/tv_grid_page_controller.gd")
+const ZapPageControllerScript = preload("res://scripts/ui/zap_page_controller.gd")
 
 @onready var background: ColorRect = $Background
 @onready var start_screen: Control = %StartScreen
@@ -211,6 +213,7 @@ func _refresh_speed(_new_mode: int) -> void:
 
 
 func _show_group() -> void:
+	_clear_dynamic_pages()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), group_button)
 	page_title.text = GameState.company_name
 	GroupPageControllerScript.render(
@@ -224,29 +227,38 @@ func _show_group() -> void:
 
 
 func _show_grid() -> void:
-	_prepare_standard_page()
+	_clear_dynamic_pages()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), grid_button)
 	page_title.text = "Grille TV"
-	page_description.text = "Ici sera construite la grille de votre chaîne, du lundi au dimanche, avec 48 cases de 30 minutes par jour."
+
+	var channel: Dictionary = GameState.get_first_channel()
+	if channel.is_empty():
+		page_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		page_description.text = "Créez d'abord votre première chaîne."
+		return
+
+	TVGridPageControllerScript.render(content_container, page_description, channel)
 
 
 func _show_zap() -> void:
-	_prepare_standard_page()
+	_clear_dynamic_pages()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
 	page_title.text = "Zap'Chaine"
-	page_description.text = "Le guide global affichera les programmes de toutes les chaînes présentes dans la partie."
+	ZapPageControllerScript.render(content_container, page_description, GameState.get_zap_channels())
 
 
 func _show_productions() -> void:
-	_prepare_standard_page()
+	_clear_dynamic_pages()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), production_button)
 	page_title.text = "Productions"
+	page_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	page_description.text = "Cette section accueillera les productions du groupe, leurs durées, leurs thèmes et leur avancement."
 
 
-func _prepare_standard_page() -> void:
+func _clear_dynamic_pages() -> void:
 	GroupPageControllerScript.clear(content_container)
-	page_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	TVGridPageControllerScript.clear(content_container)
+	ZapPageControllerScript.clear(content_container)
 
 
 func _get_navigation_buttons() -> Array[Button]:
