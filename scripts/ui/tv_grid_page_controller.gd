@@ -60,8 +60,7 @@ static func render(
 		_clear_holder(schedule_holder)
 		DayScheduleBuilderScript.build(schedule_holder, week_number, editable)
 
-	var week_selector: OptionButton = WeekSelectorScript.build(rebuild_schedule)
-	var selector_row: HBoxContainer = WeekSelectorScript.get_container(week_selector)
+	var selector_row: HBoxContainer = WeekSelectorScript.build(rebuild_schedule)
 	scheduler_holder.add_child(selector_row)
 	scheduler_holder.add_child(schedule_holder)
 
