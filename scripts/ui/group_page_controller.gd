@@ -38,11 +38,6 @@ static func _build_creation_form(parent: VBoxContainer, on_create_channel: Calla
 	title.add_theme_font_size_override("font_size", 22)
 	parent.add_child(title)
 
-	var info: Label = Label.new()
-	info.text = "Avant les Festi'Chaines, votre première chaîne est obligatoirement généraliste."
-	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	parent.add_child(info)
-
 	var name_label: Label = Label.new()
 	name_label.text = "Nom de la chaîne"
 	parent.add_child(name_label)
