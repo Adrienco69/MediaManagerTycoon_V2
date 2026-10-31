@@ -1,6 +1,17 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+
+[sub_resource type="Gradient" id="Gradient_start_months"]
+offsets = PackedFloat32Array(0, 0.166667, 0.333333, 0.5, 0.666667, 0.833333, 1)
+colors = PackedColorArray(0.121569, 0.262745, 0.152941, 1, 0.352941, 0.262745, 0.094118, 1, 0.262745, 0.137255, 0.305882, 1, 0.117647, 0.278431, 0.360784, 1, 0.329412, 0.176471, 0.117647, 1, 0.090196, 0.294118, 0.270588, 1, 0.176471, 0.207843, 0.368627, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_start_months"]
+gradient = SubResource("Gradient_start_months")
+width = 1366
+height = 768
+fill_from = Vector2(0, 0.5)
+fill_to = Vector2(1, 0.5)
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -193,6 +204,28 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="MonthGradient" type="TextureRect" parent="StartScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_start_months")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="GradientShade" type="ColorRect" parent="StartScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.22)
 
 [node name="Center" type="CenterContainer" parent="StartScreen"]
 layout_mode = 1
