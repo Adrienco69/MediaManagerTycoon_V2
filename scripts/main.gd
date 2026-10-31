@@ -18,10 +18,10 @@ func _ready() -> void:
 	GameState.credits_changed.connect(_refresh_credits)
 	GameState.speed_changed.connect(_refresh_speed)
 
-	pause_button.pressed.connect(func() -> void: GameState.set_time_mode(GameState.TimeMode.PAUSED))
-	hour_button.pressed.connect(func() -> void: GameState.set_time_mode(GameState.TimeMode.HOUR))
-	day_button.pressed.connect(func() -> void: GameState.set_time_mode(GameState.TimeMode.DAY))
-	week_button.pressed.connect(func() -> void: GameState.set_time_mode(GameState.TimeMode.WEEK))
+	pause_button.pressed.connect(_on_pause_pressed)
+	hour_button.pressed.connect(_on_hour_pressed)
+	day_button.pressed.connect(_on_day_pressed)
+	week_button.pressed.connect(_on_week_pressed)
 
 	%GroupButton.pressed.connect(_show_group)
 	%GridButton.pressed.connect(_show_grid)
@@ -30,6 +30,22 @@ func _ready() -> void:
 
 	_refresh_all()
 	_show_group()
+
+
+func _on_pause_pressed() -> void:
+	GameState.set_time_mode(GameState.TimeMode.PAUSED)
+
+
+func _on_hour_pressed() -> void:
+	GameState.set_time_mode(GameState.TimeMode.HOUR)
+
+
+func _on_day_pressed() -> void:
+	GameState.set_time_mode(GameState.TimeMode.DAY)
+
+
+func _on_week_pressed() -> void:
+	GameState.set_time_mode(GameState.TimeMode.WEEK)
 
 
 func _refresh_all() -> void:
