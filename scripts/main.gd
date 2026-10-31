@@ -218,7 +218,8 @@ func _show_group() -> void:
 		page_description,
 		GameState.player_name,
 		GameState.get_first_channel(),
-		_on_first_channel_create_requested
+		_on_first_channel_create_requested,
+		_show_grid
 	)
 
 
