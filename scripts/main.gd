@@ -268,7 +268,7 @@ func _show_zap_channel_schedule(channel: Dictionary) -> void:
 	_clear_dynamic_pages()
 	_scroll_main_to_top()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
-	page_title.text = "Zap'Chaine — %s" % String(channel.get("name", ""))
+	page_title.text = "Zap'Chaine | %s" % String(channel.get("name", ""))
 	TVGridPageControllerScript.render(
 		content_container,
 		page_description,
