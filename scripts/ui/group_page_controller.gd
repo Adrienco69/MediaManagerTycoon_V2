@@ -28,8 +28,14 @@ static func render(
 
 static func clear(content_container: VBoxContainer) -> void:
 	var existing: Node = content_container.get_node_or_null(DYNAMIC_NODE_NAME)
-	if existing != null:
-		existing.free()
+	if existing == null:
+		return
+
+	# On détache tout de suite l'ancien contenu, mais on le libère
+	# à la fin de la frame pour ne jamais supprimer un bouton pendant
+	# l'exécution de son propre signal pressed/text_submitted.
+	content_container.remove_child(existing)
+	existing.queue_free()
 
 
 static func _build_creation_form(parent: VBoxContainer, on_create_channel: Callable) -> void:
