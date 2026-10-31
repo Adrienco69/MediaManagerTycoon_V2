@@ -1,0 +1,12 @@
+# Godot 4+
+.godot/
+
+# Export / build folders
+build/
+exports/
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
