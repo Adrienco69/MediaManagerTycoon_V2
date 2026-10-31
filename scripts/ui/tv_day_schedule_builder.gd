@@ -65,7 +65,7 @@ static func _show_day(
 	for index: int in range(day_buttons.size()):
 		day_buttons[index].disabled = index == day_index
 
-	selected_day_label.text = "%s — Semaine %d" % [DAYS[day_index], week_number]
+	selected_day_label.text = "%s | Semaine %d" % [DAYS[day_index], week_number]
 	_clear(schedule)
 
 	for slot_index: int in range(48):
