@@ -3,6 +3,7 @@ extends Node
 signal time_changed
 signal credits_changed(new_value: int)
 signal speed_changed(new_mode: int)
+signal identity_changed(player_name: String, company_name: String)
 
 enum TimeMode {
 	PAUSED,
@@ -43,6 +44,8 @@ const GAME_MINUTES_PER_REAL_SECOND := {
 	TimeMode.WEEK: 336.0
 }
 
+var player_name: String = ""
+var company_name: String = ""
 var credits: int = STARTING_CREDITS
 var year: int = 1
 var month_index: int = 0
@@ -67,6 +70,30 @@ func _process(delta: float) -> void:
 
 	_minute_buffer -= whole_minutes
 	advance_minutes(whole_minutes)
+
+
+func start_new_game(new_player_name: String, new_company_name: String) -> void:
+	player_name = new_player_name.strip_edges()
+	company_name = new_company_name.strip_edges()
+	credits = STARTING_CREDITS
+	year = 1
+	month_index = 0
+	week_in_month = 1
+	week_in_year = 1
+	day_in_week = 1
+	hour = 0
+	minute = 0
+	time_mode = TimeMode.PAUSED
+	_minute_buffer = 0.0
+
+	identity_changed.emit(player_name, company_name)
+	credits_changed.emit(credits)
+	time_changed.emit()
+	speed_changed.emit(time_mode)
+
+
+func has_started_game() -> bool:
+	return not player_name.is_empty() and not company_name.is_empty()
 
 
 func set_time_mode(new_mode: TimeMode) -> void:
