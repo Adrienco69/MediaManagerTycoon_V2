@@ -5,6 +5,7 @@ signal channel_created(channel: Dictionary)
 
 const FIRST_CHANNEL_MMTN_NUMBER: int = 2
 const FIRST_CHANNEL_THEME: String = "Généraliste"
+const FIRST_CHANNEL_LAUNCH_DATE: String = "Lundi 1 Floréal 0001"
 
 var _channels: Array[Dictionary] = []
 
@@ -27,6 +28,7 @@ func create_first_channel(channel_name: String) -> bool:
 		"name": clean_name,
 		"theme": FIRST_CHANNEL_THEME,
 		"theme_locked": true,
+		"launch_date": FIRST_CHANNEL_LAUNCH_DATE,
 		"source": "initial"
 	}
 	_channels.append(channel)
