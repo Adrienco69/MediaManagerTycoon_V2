@@ -67,7 +67,7 @@ static func _add_header(table: GridContainer, text: String) -> void:
 
 static func _show_block_detail(detail_label: Label, day_index: int, block_index: int) -> void:
 	var start_hour: int = block_index * 3
-	var lines: Array[String] = []
+	var lines: PackedStringArray = PackedStringArray()
 	for slot_index: int in range(6):
 		var total_minutes: int = (start_hour * 60) + (slot_index * 30)
 		var hour: int = int(total_minutes / 60) % 24
