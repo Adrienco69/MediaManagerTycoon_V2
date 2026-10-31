@@ -77,8 +77,8 @@ static func clear(content_container: VBoxContainer) -> void:
 static func _get_description(channel: Dictionary, editable: bool) -> String:
 	var channel_name: String = String(channel.get("name", ""))
 	if editable:
-		return "Chaîne : %s — programmation modifiable jusqu'à 52 semaines." % channel_name
-	return "Chaîne : %s — consultation uniquement, aucune modification possible." % channel_name
+		return "Chaîne : %s | programmation modifiable jusqu'à 52 semaines." % channel_name
+	return "Chaîne : %s | consultation uniquement, aucune modification possible." % channel_name
 
 
 static func _clear_holder(holder: VBoxContainer) -> void:
