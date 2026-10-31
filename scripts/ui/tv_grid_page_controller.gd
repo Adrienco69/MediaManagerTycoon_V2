@@ -3,6 +3,7 @@ extends RefCounted
 
 const WeekSelectorScript = preload("res://scripts/ui/schedule_week_selector.gd")
 const DayScheduleBuilderScript = preload("res://scripts/ui/tv_day_schedule_builder.gd")
+const ProgramCatalogPanelScript = preload("res://scripts/ui/program_catalog_panel.gd")
 const DYNAMIC_NODE_NAME: String = "GridDynamic"
 
 
@@ -30,9 +31,30 @@ static func render(
 		back_button.pressed.connect(on_back)
 		dynamic.add_child(back_button)
 
+	var body: HBoxContainer = HBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 12)
+	dynamic.add_child(body)
+
+	var catalog_holder: VBoxContainer = VBoxContainer.new()
+	catalog_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	catalog_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	catalog_holder.size_flags_stretch_ratio = 1.0
+	catalog_holder.custom_minimum_size = Vector2(220, 0)
+	body.add_child(catalog_holder)
+	ProgramCatalogPanelScript.build(catalog_holder, editable)
+
+	var scheduler_holder: VBoxContainer = VBoxContainer.new()
+	scheduler_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scheduler_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scheduler_holder.size_flags_stretch_ratio = 3.0
+	scheduler_holder.add_theme_constant_override("separation", 10)
+	body.add_child(scheduler_holder)
+
 	var schedule_holder: VBoxContainer = VBoxContainer.new()
+	schedule_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	schedule_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	dynamic.add_child(schedule_holder)
 
 	var rebuild_schedule: Callable = func(week_number: int) -> void:
 		_clear_holder(schedule_holder)
@@ -40,8 +62,8 @@ static func render(
 
 	var week_selector: OptionButton = WeekSelectorScript.build(rebuild_schedule)
 	var selector_row: HBoxContainer = WeekSelectorScript.get_container(week_selector)
-	dynamic.add_child(selector_row)
-	dynamic.move_child(selector_row, 1 if on_back.is_valid() else 0)
+	scheduler_holder.add_child(selector_row)
+	scheduler_holder.add_child(schedule_holder)
 
 	rebuild_schedule.call(1)
 
