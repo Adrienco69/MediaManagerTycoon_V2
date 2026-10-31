@@ -1,9 +1,12 @@
 extends Node
 
+const PlayerChannelManagerScript = preload("res://scripts/core/player_channel_manager.gd")
+
 signal time_changed
 signal credits_changed(new_value: int)
 signal speed_changed(new_mode: int)
 signal identity_changed(player_name: String, company_name: String)
+signal channel_created(channel: Dictionary)
 
 enum TimeMode {
 	PAUSED,
@@ -57,6 +60,11 @@ var minute: int = 0
 var time_mode: TimeMode = TimeMode.PAUSED
 
 var _minute_buffer: float = 0.0
+var _player_channel_manager: PlayerChannelManager = PlayerChannelManagerScript.new()
+
+
+func _ready() -> void:
+	_player_channel_manager.channel_created.connect(_on_channel_created)
 
 
 func _process(delta: float) -> void:
@@ -64,7 +72,7 @@ func _process(delta: float) -> void:
 		return
 
 	_minute_buffer += delta * GAME_MINUTES_PER_REAL_SECOND[time_mode]
-	var whole_minutes := int(floor(_minute_buffer))
+	var whole_minutes: int = int(floor(_minute_buffer))
 	if whole_minutes <= 0:
 		return
 
@@ -85,6 +93,7 @@ func start_new_game(new_player_name: String, new_company_name: String) -> void:
 	minute = 0
 	time_mode = TimeMode.PAUSED
 	_minute_buffer = 0.0
+	_player_channel_manager.reset()
 
 	identity_changed.emit(player_name, company_name)
 	credits_changed.emit(credits)
@@ -96,6 +105,22 @@ func has_started_game() -> bool:
 	return not player_name.is_empty() and not company_name.is_empty()
 
 
+func create_first_channel(channel_name: String) -> bool:
+	return _player_channel_manager.create_first_channel(channel_name)
+
+
+func has_player_channel() -> bool:
+	return _player_channel_manager.has_first_channel()
+
+
+func get_first_channel() -> Dictionary:
+	return _player_channel_manager.get_first_channel()
+
+
+func get_player_channels() -> Array[Dictionary]:
+	return _player_channel_manager.get_channels()
+
+
 func set_time_mode(new_mode: TimeMode) -> void:
 	if time_mode == new_mode:
 		return
@@ -104,7 +129,7 @@ func set_time_mode(new_mode: TimeMode) -> void:
 
 
 func set_credits(new_value: int) -> void:
-	credits = max(new_value, 0)
+	credits = maxi(new_value, 0)
 	credits_changed.emit(credits)
 
 
@@ -123,14 +148,14 @@ func advance_minutes(amount: int) -> void:
 	if amount <= 0:
 		return
 
-	var total_minutes := minute + amount
+	var total_minutes: int = minute + amount
 	minute = total_minutes % 60
 
-	var total_hours := hour + int(total_minutes / 60)
+	var total_hours: int = hour + int(total_minutes / 60)
 	hour = total_hours % 24
 
-	var days_to_advance := int(total_hours / 24)
-	for _i in range(days_to_advance):
+	var days_to_advance: int = int(total_hours / 24)
+	for _i: int in range(days_to_advance):
 		_advance_one_day()
 
 	time_changed.emit()
@@ -158,6 +183,10 @@ func _advance_one_day() -> void:
 	month_index = 0
 	year += 1
 	week_in_year = 1
+
+
+func _on_channel_created(channel: Dictionary) -> void:
+	channel_created.emit(channel)
 
 
 func get_day_name() -> String:
