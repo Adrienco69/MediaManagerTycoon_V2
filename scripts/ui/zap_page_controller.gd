@@ -13,7 +13,7 @@ static func render(
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	page_description.text = "Historique des chaînes MMTN. Cliquez sur [Guide TV] à côté d'une chaîne pour consulter sa grille."
+	page_description.text = "Historique des chaînes MMTN. Utilisez le bouton [Guide TV] à côté d'une chaîne pour consulter sa grille."
 
 	var dynamic: VBoxContainer = VBoxContainer.new()
 	dynamic.name = DYNAMIC_NODE_NAME
@@ -138,7 +138,7 @@ static func _add_channel_cell(
 	table.add_child(panel)
 
 	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+	row.add_theme_constant_override("separation", 10)
 	panel.add_child(row)
 
 	var name_label: Label = Label.new()
@@ -148,8 +148,9 @@ static func _add_channel_cell(
 
 	var guide_button: Button = Button.new()
 	guide_button.text = "[Guide TV]"
-	guide_button.flat = true
+	guide_button.flat = false
 	guide_button.focus_mode = Control.FOCUS_ALL
+	guide_button.custom_minimum_size = Vector2(105, 34)
 	guide_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	guide_button.pressed.connect(on_open_guide)
 	row.add_child(guide_button)
