@@ -21,7 +21,8 @@ grow_vertical = 2
 color = Color(0.045, 0.065, 0.09, 1)
 mouse_filter = 2
 
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="GameUI" type="MarginContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -33,153 +34,236 @@ offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="RootVBox" type="VBoxContainer" parent="Margin"]
+[node name="RootVBox" type="VBoxContainer" parent="GameUI"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="TopBar" type="PanelContainer" parent="Margin/RootVBox"]
+[node name="TopBar" type="PanelContainer" parent="GameUI/RootVBox"]
 custom_minimum_size = Vector2(0, 70)
 layout_mode = 2
 
-[node name="TopMargin" type="MarginContainer" parent="Margin/RootVBox/TopBar"]
+[node name="TopMargin" type="MarginContainer" parent="GameUI/RootVBox/TopBar"]
 layout_mode = 2
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 10
 
-[node name="TopHBox" type="HBoxContainer" parent="Margin/RootVBox/TopBar/TopMargin"]
+[node name="TopHBox" type="HBoxContainer" parent="GameUI/RootVBox/TopBar/TopMargin"]
 layout_mode = 2
 theme_override_constants/separation = 18
 
-[node name="GameTitle" type="Label" parent="Margin/RootVBox/TopBar/TopMargin/TopHBox"]
+[node name="GameTitle" type="Label" parent="GameUI/RootVBox/TopBar/TopMargin/TopHBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "MEDIA MANAGER TYCOON V2"
 
-[node name="TopSpacer" type="Control" parent="Margin/RootVBox/TopBar/TopMargin/TopHBox"]
+[node name="TopSpacer" type="Control" parent="GameUI/RootVBox/TopBar/TopMargin/TopHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="CreditsLabel" type="Label" parent="Margin/RootVBox/TopBar/TopMargin/TopHBox"]
+[node name="CreditsLabel" type="Label" parent="GameUI/RootVBox/TopBar/TopMargin/TopHBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "1 200 CC"
 
-[node name="DateVBox" type="VBoxContainer" parent="Margin/RootVBox/TopBar/TopMargin/TopHBox"]
+[node name="DateVBox" type="VBoxContainer" parent="GameUI/RootVBox/TopBar/TopMargin/TopHBox"]
 layout_mode = 2
 
-[node name="DateLabel" type="Label" parent="Margin/RootVBox/TopBar/TopMargin/TopHBox/DateVBox"]
+[node name="DateLabel" type="Label" parent="GameUI/RootVBox/TopBar/TopMargin/TopHBox/DateVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Lundi 1 Floréal 0001"
 horizontal_alignment = 2
 
-[node name="WeekLabel" type="Label" parent="Margin/RootVBox/TopBar/TopMargin/TopHBox/DateVBox"]
+[node name="WeekLabel" type="Label" parent="GameUI/RootVBox/TopBar/TopMargin/TopHBox/DateVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Semaine 1/52"
 horizontal_alignment = 2
 
-[node name="TimeLabel" type="Label" parent="Margin/RootVBox/TopBar/TopMargin/TopHBox"]
+[node name="TimeLabel" type="Label" parent="GameUI/RootVBox/TopBar/TopMargin/TopHBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "00:00"
 
-[node name="Controls" type="HBoxContainer" parent="Margin/RootVBox"]
+[node name="Controls" type="HBoxContainer" parent="GameUI/RootVBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="SpeedLabel" type="Label" parent="Margin/RootVBox/Controls"]
+[node name="SpeedLabel" type="Label" parent="GameUI/RootVBox/Controls"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 text = "Vitesse : Pause"
 vertical_alignment = 1
 
-[node name="PauseButton" type="Button" parent="Margin/RootVBox/Controls"]
+[node name="PauseButton" type="Button" parent="GameUI/RootVBox/Controls"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Pause"
 
-[node name="HourButton" type="Button" parent="Margin/RootVBox/Controls"]
+[node name="HourButton" type="Button" parent="GameUI/RootVBox/Controls"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Heure"
 
-[node name="DayButton" type="Button" parent="Margin/RootVBox/Controls"]
+[node name="DayButton" type="Button" parent="GameUI/RootVBox/Controls"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Jour"
 
-[node name="WeekButton" type="Button" parent="Margin/RootVBox/Controls"]
+[node name="WeekButton" type="Button" parent="GameUI/RootVBox/Controls"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Semaine"
 
-[node name="ControlsSpacer" type="Control" parent="Margin/RootVBox/Controls"]
+[node name="ControlsSpacer" type="Control" parent="GameUI/RootVBox/Controls"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Nav" type="HBoxContainer" parent="Margin/RootVBox"]
+[node name="Nav" type="HBoxContainer" parent="GameUI/RootVBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="GroupButton" type="Button" parent="Margin/RootVBox/Nav"]
+[node name="GroupButton" type="Button" parent="GameUI/RootVBox/Nav"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Notre groupe"
 
-[node name="GridButton" type="Button" parent="Margin/RootVBox/Nav"]
+[node name="GridButton" type="Button" parent="GameUI/RootVBox/Nav"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Grille TV"
 
-[node name="ZapButton" type="Button" parent="Margin/RootVBox/Nav"]
+[node name="ZapButton" type="Button" parent="GameUI/RootVBox/Nav"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Zap'Chaine"
 
-[node name="ProductionButton" type="Button" parent="Margin/RootVBox/Nav"]
+[node name="ProductionButton" type="Button" parent="GameUI/RootVBox/Nav"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Productions"
 
-[node name="MainPanel" type="PanelContainer" parent="Margin/RootVBox"]
+[node name="MainPanel" type="PanelContainer" parent="GameUI/RootVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ContentMargin" type="MarginContainer" parent="Margin/RootVBox/MainPanel"]
+[node name="ContentMargin" type="MarginContainer" parent="GameUI/RootVBox/MainPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 28
 theme_override_constants/margin_top = 28
 theme_override_constants/margin_right = 28
 theme_override_constants/margin_bottom = 28
 
-[node name="ContentVBox" type="VBoxContainer" parent="Margin/RootVBox/MainPanel/ContentMargin"]
+[node name="ContentVBox" type="VBoxContainer" parent="GameUI/RootVBox/MainPanel/ContentMargin"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="PageTitle" type="Label" parent="Margin/RootVBox/MainPanel/ContentMargin/ContentVBox"]
+[node name="PageTitle" type="Label" parent="GameUI/RootVBox/MainPanel/ContentMargin/ContentVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Notre groupe"
 
-[node name="Divider" type="HSeparator" parent="Margin/RootVBox/MainPanel/ContentMargin/ContentVBox"]
+[node name="Divider" type="HSeparator" parent="GameUI/RootVBox/MainPanel/ContentMargin/ContentVBox"]
 layout_mode = 2
 
-[node name="PageDescription" type="Label" parent="Margin/RootVBox/MainPanel/ContentMargin/ContentVBox"]
+[node name="PageDescription" type="Label" parent="GameUI/RootVBox/MainPanel/ContentMargin/ContentVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 text = "Chargement..."
 autowrap_mode = 2
 
-[node name="Footer" type="Label" parent="Margin/RootVBox"]
+[node name="Footer" type="Label" parent="GameUI/RootVBox"]
 layout_mode = 2
 text = "Fondation V2 — première base jouable"
 horizontal_alignment = 2
 modulate = Color(0.7, 0.75, 0.82, 1)
+
+[node name="StartScreen" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Center" type="CenterContainer" parent="StartScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="StartScreen/Center"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="StartScreen/Center/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 32
+
+[node name="VBox" type="VBoxContainer" parent="StartScreen/Center/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="StartScreen/Center/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Nouvelle partie"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="StartScreen/Center/Panel/Margin/VBox"]
+layout_mode = 2
+text = "Créez votre société de médias."
+horizontal_alignment = 1
+modulate = Color(0.72, 0.76, 0.82, 1)
+
+[node name="SpacerTop" type="Control" parent="StartScreen/Center/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
+[node name="PlayerNameLabel" type="Label" parent="StartScreen/Center/Panel/Margin/VBox"]
+layout_mode = 2
+text = "Nom du joueur"
+
+[node name="PlayerNameInput" type="LineEdit" parent="StartScreen/Center/Panel/Margin/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+placeholder_text = "Votre nom"
+max_length = 40
+
+[node name="CompanyNameLabel" type="Label" parent="StartScreen/Center/Panel/Margin/VBox"]
+layout_mode = 2
+text = "Nom de la société"
+
+[node name="CompanyNameInput" type="LineEdit" parent="StartScreen/Center/Panel/Margin/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+placeholder_text = "Nom de votre société"
+max_length = 50
+
+[node name="StartErrorLabel" type="Label" parent="StartScreen/Center/Panel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
+modulate = Color(1, 0.45, 0.45, 1)
+
+[node name="StartGameButton" type="Button" parent="StartScreen/Center/Panel/Margin/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Commencer"
