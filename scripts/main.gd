@@ -137,7 +137,7 @@ func _on_identity_changed(_player_name: String, _company_name: String) -> void:
 
 func _on_first_channel_create_requested(channel_name: String) -> void:
 	if GameState.create_first_channel(channel_name):
-		_show_group()
+		call_deferred("_show_group")
 
 
 func _on_pause_pressed() -> void:
