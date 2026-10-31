@@ -5,10 +5,15 @@ const DYNAMIC_NODE_NAME: String = "ZapDynamic"
 const COLUMN_WIDTHS: Array[float] = [100.0, 220.0, 240.0, 180.0, 220.0]
 
 
-static func render(content_container: VBoxContainer, page_description: Label, channels: Array[Dictionary]) -> void:
+static func render(
+	content_container: VBoxContainer,
+	page_description: Label,
+	channels: Array[Dictionary],
+	on_open_channel: Callable
+) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	page_description.text = "Chaînes disponibles sur la MMTN."
+	page_description.text = "Chaînes disponibles sur la MMTN. Cliquez sur le nom d'une chaîne pour consulter son guide TV."
 
 	var dynamic: VBoxContainer = VBoxContainer.new()
 	dynamic.name = DYNAMIC_NODE_NAME
@@ -34,8 +39,11 @@ static func render(content_container: VBoxContainer, page_description: Label, ch
 	_add_cell(table, "Lancement", 4, true)
 
 	for channel: Dictionary in channels:
+		var selected_channel: Dictionary = channel.duplicate(true)
 		_add_cell(table, str(int(channel.get("mmtn_number", 0))), 0, false)
-		_add_cell(table, String(channel.get("name", "")), 1, false)
+		_add_channel_button(table, String(channel.get("name", "")), 1, func() -> void:
+			on_open_channel.call(selected_channel)
+		)
 		_add_cell(table, String(channel.get("group", "")), 2, false)
 		_add_cell(table, String(channel.get("theme", "Généraliste")), 3, false)
 		_add_cell(table, String(channel.get("launch_date", "")), 4, false)
@@ -49,6 +57,36 @@ static func clear(content_container: VBoxContainer) -> void:
 
 
 static func _add_cell(table: GridContainer, text: String, column: int, is_header: bool) -> void:
+	var panel: PanelContainer = _create_panel(column)
+	table.add_child(panel)
+
+	var label: Label = Label.new()
+	label.text = text
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if is_header:
+		label.add_theme_font_size_override("font_size", 16)
+	panel.add_child(label)
+
+
+static func _add_channel_button(
+	table: GridContainer,
+	text: String,
+	column: int,
+	on_pressed: Callable
+) -> void:
+	var panel: PanelContainer = _create_panel(column)
+	table.add_child(panel)
+
+	var button: Button = Button.new()
+	button.text = text
+	button.flat = true
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.pressed.connect(on_pressed)
+	panel.add_child(button)
+
+
+static func _create_panel(column: int) -> PanelContainer:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(COLUMN_WIDTHS[column], 46)
 
@@ -64,11 +102,4 @@ static func _add_cell(table: GridContainer, text: String, column: int, is_header
 	box.content_margin_top = 7.0
 	box.content_margin_bottom = 7.0
 	panel.add_theme_stylebox_override("panel", box)
-	table.add_child(panel)
-
-	var label: Label = Label.new()
-	label.text = text
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	if is_header:
-		label.add_theme_font_size_override("font_size", 16)
-	panel.add_child(label)
+	return panel
