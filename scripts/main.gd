@@ -43,6 +43,7 @@ func _ready() -> void:
 		speed_label,
 		week_label,
 		date_container,
+		credits_label,
 		pause_button,
 		hour_button,
 		day_button,
