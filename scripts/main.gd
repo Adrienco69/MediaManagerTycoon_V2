@@ -37,7 +37,15 @@ var _last_theme_day_key: int = -1
 
 func _ready() -> void:
 	_setup_start_screen_gradient()
-	TopBarLayoutScript.place_speed_under_date(speed_label, week_label, date_container)
+	TopBarLayoutScript.place_speed_controls_under_date(
+		speed_label,
+		week_label,
+		date_container,
+		pause_button,
+		hour_button,
+		day_button,
+		week_button
+	)
 	_connect_game_signals()
 	_connect_buttons()
 	_refresh_all()
