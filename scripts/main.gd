@@ -7,6 +7,7 @@ const NavigationButtonStateScript = preload("res://scripts/ui/navigation_button_
 const GroupPageControllerScript = preload("res://scripts/ui/group_page_controller.gd")
 const TVGridPageControllerScript = preload("res://scripts/ui/tv_grid_page_controller.gd")
 const ZapPageControllerScript = preload("res://scripts/ui/zap_page_controller.gd")
+const MainContentScrollScript = preload("res://scripts/ui/main_content_scroll.gd")
 
 @onready var background: ColorRect = $Background
 @onready var start_screen: Control = %StartScreen
@@ -31,16 +32,19 @@ const ZapPageControllerScript = preload("res://scripts/ui/zap_page_controller.gd
 @onready var grid_button: Button = %GridButton
 @onready var zap_button: Button = %ZapButton
 @onready var production_button: Button = %ProductionButton
+@onready var content_margin: MarginContainer = $GameUI/RootVBox/MainPanel/ContentMargin
 @onready var content_container: VBoxContainer = $GameUI/RootVBox/MainPanel/ContentMargin/ContentVBox
 @onready var page_title: Label = %PageTitle
 @onready var page_description: Label = %PageDescription
 @onready var start_title: Label = $StartScreen/Center/Panel/Margin/VBox/Title
 
 var _last_theme_day_key: int = -1
+var _main_content_scroll: ScrollContainer
 
 
 func _ready() -> void:
 	_setup_start_screen_gradient()
+	_main_content_scroll = MainContentScrollScript.setup(content_margin, content_container)
 	TopBarLayoutScript.place_speed_controls_under_date(
 		speed_label,
 		week_label,
@@ -214,6 +218,7 @@ func _refresh_speed(_new_mode: int) -> void:
 
 func _show_group() -> void:
 	_clear_dynamic_pages()
+	_scroll_main_to_top()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), group_button)
 	page_title.text = GameState.company_name
 	GroupPageControllerScript.render(
@@ -228,6 +233,7 @@ func _show_group() -> void:
 
 func _show_grid() -> void:
 	_clear_dynamic_pages()
+	_scroll_main_to_top()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), grid_button)
 	page_title.text = "Grille TV"
 
@@ -247,6 +253,7 @@ func _show_grid() -> void:
 
 func _show_zap() -> void:
 	_clear_dynamic_pages()
+	_scroll_main_to_top()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
 	page_title.text = "Zap'Chaine"
 	ZapPageControllerScript.render(
@@ -259,6 +266,7 @@ func _show_zap() -> void:
 
 func _show_zap_channel_schedule(channel: Dictionary) -> void:
 	_clear_dynamic_pages()
+	_scroll_main_to_top()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
 	page_title.text = "Zap'Chaine — %s" % String(channel.get("name", ""))
 	TVGridPageControllerScript.render(
@@ -272,6 +280,7 @@ func _show_zap_channel_schedule(channel: Dictionary) -> void:
 
 func _show_productions() -> void:
 	_clear_dynamic_pages()
+	_scroll_main_to_top()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), production_button)
 	page_title.text = "Productions"
 	page_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -282,6 +291,11 @@ func _clear_dynamic_pages() -> void:
 	GroupPageControllerScript.clear(content_container)
 	TVGridPageControllerScript.clear(content_container)
 	ZapPageControllerScript.clear(content_container)
+
+
+func _scroll_main_to_top() -> void:
+	if _main_content_scroll != null:
+		MainContentScrollScript.scroll_to_top(_main_content_scroll)
 
 
 func _get_navigation_buttons() -> Array[Button]:
