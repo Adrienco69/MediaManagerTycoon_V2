@@ -21,8 +21,8 @@ func _ready() -> void:
 
 
 func _build_month_layers() -> void:
-	for month_index: int in range(MONTH_COLORS.size()):
-		var layer: TextureRect = _create_month_layer(month_index)
+	for month_index in range(MONTH_COLORS.size()):
+		var layer: TextureRect = _create_month_layer(int(month_index))
 		add_child(layer)
 		layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
