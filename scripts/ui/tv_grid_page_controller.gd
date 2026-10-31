@@ -34,15 +34,14 @@ static func render(
 	schedule_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	dynamic.add_child(schedule_holder)
 
-	var current_week: int = 1
 	var rebuild_schedule: Callable = func(week_number: int) -> void:
-		current_week = week_number
 		_clear_holder(schedule_holder)
-		DayScheduleBuilderScript.build(schedule_holder, current_week, editable)
+		DayScheduleBuilderScript.build(schedule_holder, week_number, editable)
 
 	var week_selector: OptionButton = WeekSelectorScript.build(rebuild_schedule)
-	dynamic.add_child(WeekSelectorScript.get_container(week_selector))
-	dynamic.move_child(WeekSelectorScript.get_container(week_selector), 1 if on_back.is_valid() else 0)
+	var selector_row: HBoxContainer = WeekSelectorScript.get_container(week_selector)
+	dynamic.add_child(selector_row)
+	dynamic.move_child(selector_row, 1 if on_back.is_valid() else 0)
 
 	rebuild_schedule.call(1)
 
