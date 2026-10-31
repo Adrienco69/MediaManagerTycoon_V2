@@ -2,12 +2,15 @@ class_name UIThemeManager
 extends RefCounted
 
 const CalendarThemeScript = preload("res://scripts/calendar_theme.gd")
+const TEXT_WHITE: Color = Color(1.0, 1.0, 1.0, 1.0)
+const TEXT_WHITE_SOFT: Color = Color(1.0, 1.0, 1.0, 0.72)
+const TEXT_WHITE_DISABLED: Color = Color(1.0, 1.0, 1.0, 0.45)
 
 
 static func apply_calendar_theme(
 	root: Control,
 	background: ColorRect,
-	accent_labels: Array[Label],
+	white_labels: Array[Label],
 	month_index: int,
 	day_of_month: int,
 	weeks_in_month: int
@@ -18,33 +21,32 @@ static func apply_calendar_theme(
 	var surface_alt_color: Color = palette["surface_alt"]
 	var accent_color: Color = palette["accent"]
 	var accent_soft_color: Color = palette["accent_soft"]
-	var text_color: Color = palette["text"]
-	var muted_color: Color = palette["muted"]
 
 	background.color = background_color
-	root.theme = _build_theme(surface_color, surface_alt_color, accent_color, accent_soft_color, text_color, muted_color)
+	root.theme = _build_theme(surface_color, surface_alt_color, accent_color, accent_soft_color)
 
-	for label: Label in accent_labels:
-		label.add_theme_color_override("font_color", accent_soft_color)
+	for label: Label in white_labels:
+		label.add_theme_color_override("font_color", TEXT_WHITE)
 
 
 static func _build_theme(
 	surface: Color,
 	surface_alt: Color,
 	accent: Color,
-	accent_soft: Color,
-	text_color: Color,
-	muted: Color
+	accent_soft: Color
 ) -> Theme:
 	var result: Theme = Theme.new()
-	result.set_color("font_color", "Label", text_color)
-	result.set_color("font_color", "Button", text_color)
-	result.set_color("font_hover_color", "Button", text_color)
-	result.set_color("font_pressed_color", "Button", text_color)
-	result.set_color("font_disabled_color", "Button", muted.darkened(0.22))
-	result.set_color("font_color", "LineEdit", text_color)
-	result.set_color("font_placeholder_color", "LineEdit", muted)
-	result.set_color("caret_color", "LineEdit", accent_soft)
+
+	# Les mois changent les surfaces et les bordures, jamais la couleur du texte.
+	result.set_color("font_color", "Label", TEXT_WHITE)
+	result.set_color("font_color", "Button", TEXT_WHITE)
+	result.set_color("font_hover_color", "Button", TEXT_WHITE)
+	result.set_color("font_pressed_color", "Button", TEXT_WHITE)
+	result.set_color("font_disabled_color", "Button", TEXT_WHITE_DISABLED)
+	result.set_color("font_color", "LineEdit", TEXT_WHITE)
+	result.set_color("font_placeholder_color", "LineEdit", TEXT_WHITE_SOFT)
+	result.set_color("caret_color", "LineEdit", TEXT_WHITE)
+
 	result.set_stylebox("panel", "PanelContainer", _make_box(surface, accent.darkened(0.45), 10, 1))
 	result.set_stylebox("normal", "Button", _make_box(surface_alt, accent.darkened(0.35), 8, 1))
 	result.set_stylebox("hover", "Button", _make_box(surface_alt.lightened(0.10), accent, 8, 1))
