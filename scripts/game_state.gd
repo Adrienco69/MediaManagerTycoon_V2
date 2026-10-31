@@ -58,6 +58,7 @@ var time_mode: TimeMode = TimeMode.PAUSED
 
 var _minute_buffer: float = 0.0
 var _player_channel_manager: PlayerChannelManager = PlayerChannelManagerScript.new()
+var _mmtn_registry: MMTNRegistry = MMTNRegistryScript.new()
 
 
 func _ready() -> void:
@@ -91,6 +92,7 @@ func start_new_game(new_player_name: String, new_company_name: String) -> void:
 	time_mode = TimeMode.PAUSED
 	_minute_buffer = 0.0
 	_player_channel_manager.reset()
+	_mmtn_registry.reset()
 
 	identity_changed.emit(player_name, company_name)
 	credits_changed.emit(credits)
@@ -119,7 +121,15 @@ func get_player_channels() -> Array[Dictionary]:
 
 
 func get_zap_channels() -> Array[Dictionary]:
-	return MMTNRegistryScript.get_initial_channels(get_first_channel(), company_name)
+	return _mmtn_registry.get_channels()
+
+
+func register_mmtn_channel(channel: Dictionary) -> void:
+	_mmtn_registry.register_channel(channel)
+
+
+func close_mmtn_channel(mmtn_number: int, closed_date: String) -> bool:
+	return _mmtn_registry.close_channel(mmtn_number, closed_date)
 
 
 func set_time_mode(new_mode: TimeMode) -> void:
@@ -187,6 +197,7 @@ func _advance_one_day() -> void:
 
 
 func _on_channel_created(channel: Dictionary) -> void:
+	_mmtn_registry.register_initial_channels(channel, company_name)
 	channel_created.emit(channel)
 
 
