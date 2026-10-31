@@ -88,13 +88,29 @@ static func get_palette(month_index: int, day_of_month: int, weeks_in_month: int
 	# Smoothstep : la transition reste douce au début et à la fin du mois.
 	var progress := raw_progress * raw_progress * (3.0 - (2.0 * raw_progress))
 
+	var current_background: Color = current["background"]
+	var current_surface: Color = current["surface"]
+	var current_surface_alt: Color = current["surface_alt"]
+	var current_accent: Color = current["accent"]
+	var current_accent_soft: Color = current["accent_soft"]
+	var current_text: Color = current["text"]
+	var current_muted: Color = current["muted"]
+
+	var next_background: Color = next["background"]
+	var next_surface: Color = next["surface"]
+	var next_surface_alt: Color = next["surface_alt"]
+	var next_accent: Color = next["accent"]
+	var next_accent_soft: Color = next["accent_soft"]
+	var next_text: Color = next["text"]
+	var next_muted: Color = next["muted"]
+
 	return {
 		"name": current["name"],
-		"background": (current["background"] as Color).lerp(next["background"] as Color, progress),
-		"surface": (current["surface"] as Color).lerp(next["surface"] as Color, progress),
-		"surface_alt": (current["surface_alt"] as Color).lerp(next["surface_alt"] as Color, progress),
-		"accent": (current["accent"] as Color).lerp(next["accent"] as Color, progress),
-		"accent_soft": (current["accent_soft"] as Color).lerp(next["accent_soft"] as Color, progress),
-		"text": (current["text"] as Color).lerp(next["text"] as Color, progress),
-		"muted": (current["muted"] as Color).lerp(next["muted"] as Color, progress)
+		"background": current_background.lerp(next_background, progress),
+		"surface": current_surface.lerp(next_surface, progress),
+		"surface_alt": current_surface_alt.lerp(next_surface_alt, progress),
+		"accent": current_accent.lerp(next_accent, progress),
+		"accent_soft": current_accent_soft.lerp(next_accent_soft, progress),
+		"text": current_text.lerp(next_text, progress),
+		"muted": current_muted.lerp(next_muted, progress)
 	}
