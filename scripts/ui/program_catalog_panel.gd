@@ -2,7 +2,7 @@ class_name ProgramCatalogPanel
 extends RefCounted
 
 
-static func build(parent: Control, editable: bool) -> void:
+static func build(parent: Control, editable: bool, programs: Array[Dictionary]) -> void:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -36,16 +36,41 @@ static func build(parent: Control, editable: bool) -> void:
 
 	var hint: Label = Label.new()
 	if editable:
-		hint.text = "Les programmes créés apparaîtront ici et pourront être glissés vers la grille."
+		hint.text = "Catalogue du groupe. Le glisser-déposer vers la grille sera branché ensuite."
 	else:
-		hint.text = "Catalogue de la chaîne consultée."
+		hint.text = "Catalogue non modifiable dans Zap'Chaine."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(hint)
 
 	var separator: HSeparator = HSeparator.new()
 	content.add_child(separator)
 
-	var empty_label: Label = Label.new()
-	empty_label.text = "Aucun programme créé pour le moment."
-	empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_child(empty_label)
+	if programs.is_empty():
+		var empty_label: Label = Label.new()
+		empty_label.text = "Aucun programme disponible."
+		empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		content.add_child(empty_label)
+		return
+
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 360)
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(scroll)
+
+	var list: VBoxContainer = VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 6)
+	scroll.add_child(list)
+
+	for program: Dictionary in programs:
+		var button: Button = Button.new()
+		button.text = "%s | %d min" % [
+			String(program.get("name", "")),
+			int(program.get("duration_minutes", 0))
+		]
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.disabled = not editable
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.custom_minimum_size = Vector2(0, 38)
+		list.add_child(button)
