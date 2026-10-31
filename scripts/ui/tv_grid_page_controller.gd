@@ -12,6 +12,7 @@ static func render(
 	page_description: Label,
 	channel: Dictionary,
 	editable: bool,
+	programs: Array[Dictionary],
 	on_back: Callable = Callable()
 ) -> void:
 	clear(content_container)
@@ -43,7 +44,7 @@ static func render(
 	catalog_holder.size_flags_stretch_ratio = 1.0
 	catalog_holder.custom_minimum_size = Vector2(220, 0)
 	body.add_child(catalog_holder)
-	ProgramCatalogPanelScript.build(catalog_holder, editable)
+	ProgramCatalogPanelScript.build(catalog_holder, editable, programs)
 
 	var scheduler_holder: VBoxContainer = VBoxContainer.new()
 	scheduler_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
