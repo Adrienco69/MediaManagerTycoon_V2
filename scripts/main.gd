@@ -1,6 +1,8 @@
 extends Control
 
 const UIThemeManagerScript = preload("res://scripts/ui/ui_theme_manager.gd")
+const StartScreenGradientScript = preload("res://scripts/ui/start_screen_gradient.gd")
+const TopBarLayoutScript = preload("res://scripts/ui/top_bar_layout.gd")
 
 @onready var background: ColorRect = $Background
 @onready var start_screen: Control = %StartScreen
@@ -12,6 +14,7 @@ const UIThemeManagerScript = preload("res://scripts/ui/ui_theme_manager.gd")
 
 @onready var game_title: Label = $GameUI/RootVBox/TopBar/TopMargin/TopHBox/GameTitle
 @onready var credits_label: Label = %CreditsLabel
+@onready var date_container: VBoxContainer = $GameUI/RootVBox/TopBar/TopMargin/TopHBox/DateVBox
 @onready var date_label: Label = %DateLabel
 @onready var week_label: Label = %WeekLabel
 @onready var time_label: Label = %TimeLabel
@@ -28,6 +31,8 @@ var _last_theme_day_key: int = -1
 
 
 func _ready() -> void:
+	_setup_start_screen_gradient()
+	TopBarLayoutScript.place_speed_under_date(speed_label, week_label, date_container)
 	_connect_game_signals()
 	_connect_buttons()
 	_refresh_all()
@@ -36,6 +41,22 @@ func _ready() -> void:
 		_show_game_ui()
 	else:
 		_show_start_screen()
+
+
+func _setup_start_screen_gradient() -> void:
+	var old_vertical: CanvasItem = start_screen.get_node_or_null("MonthGradient") as CanvasItem
+	var old_diagonal: CanvasItem = start_screen.get_node_or_null("MonthGradientDiagonal") as CanvasItem
+
+	if old_vertical != null:
+		old_vertical.visible = false
+	if old_diagonal != null:
+		old_diagonal.visible = false
+
+	var gradient_layer: Control = StartScreenGradientScript.new() as Control
+	gradient_layer.name = "AlternatingMonthGradient"
+	start_screen.add_child(gradient_layer)
+	gradient_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	start_screen.move_child(gradient_layer, 0)
 
 
 func _connect_game_signals() -> void:
