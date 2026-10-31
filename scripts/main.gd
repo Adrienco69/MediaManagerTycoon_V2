@@ -3,6 +3,7 @@ extends Control
 const UIThemeManagerScript = preload("res://scripts/ui/ui_theme_manager.gd")
 const StartScreenGradientScript = preload("res://scripts/ui/start_screen_gradient.gd")
 const TopBarLayoutScript = preload("res://scripts/ui/top_bar_layout.gd")
+const NavigationButtonStateScript = preload("res://scripts/ui/navigation_button_state.gd")
 
 @onready var background: ColorRect = $Background
 @onready var start_screen: Control = %StartScreen
@@ -23,6 +24,10 @@ const TopBarLayoutScript = preload("res://scripts/ui/top_bar_layout.gd")
 @onready var hour_button: Button = %HourButton
 @onready var day_button: Button = %DayButton
 @onready var week_button: Button = %WeekButton
+@onready var group_button: Button = %GroupButton
+@onready var grid_button: Button = %GridButton
+@onready var zap_button: Button = %ZapButton
+@onready var production_button: Button = %ProductionButton
 @onready var page_title: Label = %PageTitle
 @onready var page_description: Label = %PageDescription
 @onready var start_title: Label = $StartScreen/Center/Panel/Margin/VBox/Title
@@ -76,10 +81,10 @@ func _connect_buttons() -> void:
 	day_button.pressed.connect(_on_day_pressed)
 	week_button.pressed.connect(_on_week_pressed)
 
-	%GroupButton.pressed.connect(_show_group)
-	%GridButton.pressed.connect(_show_grid)
-	%ZapButton.pressed.connect(_show_zap)
-	%ProductionButton.pressed.connect(_show_productions)
+	group_button.pressed.connect(_show_group)
+	grid_button.pressed.connect(_show_grid)
+	zap_button.pressed.connect(_show_zap)
+	production_button.pressed.connect(_show_productions)
 
 
 func _show_start_screen() -> void:
@@ -188,23 +193,36 @@ func _refresh_speed(_new_mode: int) -> void:
 
 
 func _show_group() -> void:
+	NavigationButtonStateScript.apply(_get_navigation_buttons(), group_button)
 	page_title.text = GameState.company_name
 	page_description.text = "Dirigeant : %s\nCapital de départ : 1 200 CC\n\nLa prochaine étape sera la création de votre première chaîne de télévision." % GameState.player_name
 
 
 func _show_grid() -> void:
+	NavigationButtonStateScript.apply(_get_navigation_buttons(), grid_button)
 	page_title.text = "Grille TV"
 	page_description.text = "Ici sera construite la grille de votre chaîne, du lundi au dimanche, avec 48 cases de 30 minutes par jour."
 
 
 func _show_zap() -> void:
+	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
 	page_title.text = "Zap'Chaine"
 	page_description.text = "Le guide global affichera les programmes de toutes les chaînes présentes dans la partie."
 
 
 func _show_productions() -> void:
+	NavigationButtonStateScript.apply(_get_navigation_buttons(), production_button)
 	page_title.text = "Productions"
 	page_description.text = "Cette section accueillera les productions du groupe, leurs durées, leurs thèmes et leur avancement."
+
+
+func _get_navigation_buttons() -> Array[Button]:
+	return [
+		group_button,
+		grid_button,
+		zap_button,
+		production_button
+	]
 
 
 func _format_number(value: int) -> String:
