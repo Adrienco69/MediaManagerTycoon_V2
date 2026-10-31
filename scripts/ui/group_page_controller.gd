@@ -9,6 +9,7 @@ static func render(
 	content_container: VBoxContainer,
 	page_description: Label,
 	player_name: String,
+	company_name: String,
 	first_channel: Dictionary,
 	on_create_channel: Callable,
 	on_edit_guide: Callable
@@ -23,7 +24,7 @@ static func render(
 	content_container.add_child(dynamic)
 
 	if first_channel.is_empty():
-		_build_creation_form(dynamic, on_create_channel)
+		_build_creation_form(dynamic, company_name, on_create_channel)
 	else:
 		_build_channel_summary(dynamic, first_channel, on_edit_guide)
 
@@ -37,21 +38,58 @@ static func clear(content_container: VBoxContainer) -> void:
 	existing.queue_free()
 
 
-static func _build_creation_form(parent: VBoxContainer, on_create_channel: Callable) -> void:
+static func _build_creation_form(
+	parent: VBoxContainer,
+	company_name: String,
+	on_create_channel: Callable
+) -> void:
 	var title: Label = Label.new()
 	title.text = "Créer votre première chaîne"
 	title.add_theme_font_size_override("font_size", 22)
 	parent.add_child(title)
 
-	var name_label: Label = Label.new()
-	name_label.text = "Nom de la chaîne"
-	parent.add_child(name_label)
+	var choice_label: Label = Label.new()
+	choice_label.text = "Nom de la chaîne"
+	parent.add_child(choice_label)
+
+	var choice_group: ButtonGroup = ButtonGroup.new()
+
+	var use_group_name: CheckBox = CheckBox.new()
+	use_group_name.text = "Reprendre le nom du groupe : %s" % company_name
+	use_group_name.button_group = choice_group
+	use_group_name.button_pressed = true
+	parent.add_child(use_group_name)
+
+	var use_custom_name: CheckBox = CheckBox.new()
+	use_custom_name.text = "Choisir un autre nom"
+	use_custom_name.button_group = choice_group
+	parent.add_child(use_custom_name)
 
 	var name_input: LineEdit = LineEdit.new()
 	name_input.placeholder_text = "Nom de votre chaîne"
 	name_input.max_length = 50
 	name_input.custom_minimum_size = Vector2(0, 44)
+	name_input.text = company_name
+	name_input.editable = false
 	parent.add_child(name_input)
+
+	var update_name_mode: Callable = func() -> void:
+		var reuse_group_name: bool = use_group_name.button_pressed
+		name_input.editable = not reuse_group_name
+		if reuse_group_name:
+			name_input.text = company_name
+		else:
+			name_input.text = ""
+			name_input.grab_focus()
+
+	use_group_name.toggled.connect(func(pressed: bool) -> void:
+		if pressed:
+			update_name_mode.call()
+	)
+	use_custom_name.toggled.connect(func(pressed: bool) -> void:
+		if pressed:
+			update_name_mode.call()
+	)
 
 	var theme_label: Label = Label.new()
 	theme_label.text = "Thème : Généraliste 🔒"
@@ -67,7 +105,7 @@ static func _build_creation_form(parent: VBoxContainer, on_create_channel: Calla
 	parent.add_child(create_button)
 
 	var submit: Callable = func() -> void:
-		var channel_name: String = name_input.text.strip_edges()
+		var channel_name: String = company_name if use_group_name.button_pressed else name_input.text.strip_edges()
 		if channel_name.is_empty():
 			error_label.text = "Renseigne le nom de la chaîne."
 			return
@@ -76,7 +114,6 @@ static func _build_creation_form(parent: VBoxContainer, on_create_channel: Calla
 
 	create_button.pressed.connect(submit)
 	name_input.text_submitted.connect(func(_text: String) -> void: submit.call())
-	name_input.grab_focus()
 
 
 static func _build_channel_summary(
