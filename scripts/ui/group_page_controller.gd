@@ -1,6 +1,7 @@
 class_name GroupPageController
 extends RefCounted
 
+const ChannelTableBuilderScript = preload("res://scripts/ui/channel_table_builder.gd")
 const DYNAMIC_NODE_NAME: String = "GroupDynamic"
 
 
@@ -9,7 +10,8 @@ static func render(
 	page_description: Label,
 	player_name: String,
 	first_channel: Dictionary,
-	on_create_channel: Callable
+	on_create_channel: Callable,
+	on_edit_guide: Callable
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -23,7 +25,7 @@ static func render(
 	if first_channel.is_empty():
 		_build_creation_form(dynamic, on_create_channel)
 	else:
-		_build_channel_summary(dynamic, first_channel)
+		_build_channel_summary(dynamic, first_channel, on_edit_guide)
 
 
 static func clear(content_container: VBoxContainer) -> void:
@@ -31,9 +33,6 @@ static func clear(content_container: VBoxContainer) -> void:
 	if existing == null:
 		return
 
-	# On détache tout de suite l'ancien contenu, mais on le libère
-	# à la fin de la frame pour ne jamais supprimer un bouton pendant
-	# l'exécution de son propre signal pressed/text_submitted.
 	content_container.remove_child(existing)
 	existing.queue_free()
 
@@ -80,20 +79,14 @@ static func _build_creation_form(parent: VBoxContainer, on_create_channel: Calla
 	name_input.grab_focus()
 
 
-static func _build_channel_summary(parent: VBoxContainer, channel: Dictionary) -> void:
+static func _build_channel_summary(
+	parent: VBoxContainer,
+	channel: Dictionary,
+	on_edit_guide: Callable
+) -> void:
 	var title: Label = Label.new()
 	title.text = "Votre chaîne"
 	title.add_theme_font_size_override("font_size", 22)
 	parent.add_child(title)
 
-	var header: Label = Label.new()
-	header.text = "N° MMTN    Nom    Thème"
-	parent.add_child(header)
-
-	var row: Label = Label.new()
-	row.text = "%d    %s    %s 🔒" % [
-		int(channel.get("mmtn_number", 2)),
-		String(channel.get("name", "")),
-		String(channel.get("theme", "Généraliste"))
-	]
-	parent.add_child(row)
+	ChannelTableBuilderScript.build(parent, channel, on_edit_guide)
