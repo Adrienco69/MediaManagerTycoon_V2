@@ -4,6 +4,7 @@ const UIThemeManagerScript = preload("res://scripts/ui/ui_theme_manager.gd")
 const StartScreenGradientScript = preload("res://scripts/ui/start_screen_gradient.gd")
 const TopBarLayoutScript = preload("res://scripts/ui/top_bar_layout.gd")
 const NavigationButtonStateScript = preload("res://scripts/ui/navigation_button_state.gd")
+const GroupPageControllerScript = preload("res://scripts/ui/group_page_controller.gd")
 
 @onready var background: ColorRect = $Background
 @onready var start_screen: Control = %StartScreen
@@ -28,6 +29,7 @@ const NavigationButtonStateScript = preload("res://scripts/ui/navigation_button_
 @onready var grid_button: Button = %GridButton
 @onready var zap_button: Button = %ZapButton
 @onready var production_button: Button = %ProductionButton
+@onready var content_container: VBoxContainer = $GameUI/RootVBox/MainPanel/ContentMargin/ContentVBox
 @onready var page_title: Label = %PageTitle
 @onready var page_description: Label = %PageDescription
 @onready var start_title: Label = $StartScreen/Center/Panel/Margin/VBox/Title
@@ -130,6 +132,11 @@ func _on_identity_changed(_player_name: String, _company_name: String) -> void:
 		_show_group()
 
 
+func _on_first_channel_create_requested(channel_name: String) -> void:
+	if GameState.create_first_channel(channel_name):
+		_show_group()
+
+
 func _on_pause_pressed() -> void:
 	GameState.set_time_mode(GameState.TimeMode.PAUSED)
 
@@ -203,25 +210,39 @@ func _refresh_speed(_new_mode: int) -> void:
 func _show_group() -> void:
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), group_button)
 	page_title.text = GameState.company_name
-	page_description.text = "Dirigeant : %s\nCapital de départ : 1 200 CC\n\nLa prochaine étape sera la création de votre première chaîne de télévision." % GameState.player_name
+	GroupPageControllerScript.render(
+		content_container,
+		page_description,
+		GameState.player_name,
+		GameState.get_first_channel(),
+		_on_first_channel_create_requested
+	)
 
 
 func _show_grid() -> void:
+	_prepare_standard_page()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), grid_button)
 	page_title.text = "Grille TV"
 	page_description.text = "Ici sera construite la grille de votre chaîne, du lundi au dimanche, avec 48 cases de 30 minutes par jour."
 
 
 func _show_zap() -> void:
+	_prepare_standard_page()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
 	page_title.text = "Zap'Chaine"
 	page_description.text = "Le guide global affichera les programmes de toutes les chaînes présentes dans la partie."
 
 
 func _show_productions() -> void:
+	_prepare_standard_page()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), production_button)
 	page_title.text = "Productions"
 	page_description.text = "Cette section accueillera les productions du groupe, leurs durées, leurs thèmes et leur avancement."
+
+
+func _prepare_standard_page() -> void:
+	GroupPageControllerScript.clear(content_container)
+	page_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 
 func _get_navigation_buttons() -> Array[Button]:
