@@ -7,6 +7,7 @@ const NavigationButtonStateScript = preload("res://scripts/ui/navigation_button_
 const GroupPageControllerScript = preload("res://scripts/ui/group_page_controller.gd")
 const TVGridPageControllerScript = preload("res://scripts/ui/tv_grid_page_controller.gd")
 const ZapPageControllerScript = preload("res://scripts/ui/zap_page_controller.gd")
+const ProductionPageControllerScript = preload("res://scripts/ui/production_page_controller.gd")
 const MainContentScrollScript = preload("res://scripts/ui/main_content_scroll.gd")
 
 @onready var background: ColorRect = $Background
@@ -225,6 +226,7 @@ func _show_group() -> void:
 		content_container,
 		page_description,
 		GameState.player_name,
+		GameState.company_name,
 		GameState.get_first_channel(),
 		_on_first_channel_create_requested,
 		_show_grid
@@ -247,7 +249,8 @@ func _show_grid() -> void:
 		content_container,
 		page_description,
 		channel,
-		true
+		true,
+		GameState.get_group_programs()
 	)
 
 
@@ -274,6 +277,7 @@ func _show_zap_channel_schedule(channel: Dictionary) -> void:
 		page_description,
 		channel,
 		false,
+		[],
 		_show_zap
 	)
 
@@ -283,14 +287,29 @@ func _show_productions() -> void:
 	_scroll_main_to_top()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), production_button)
 	page_title.text = "Productions"
-	page_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	page_description.text = "Cette section accueillera les productions du groupe, leurs durées, leurs thèmes et leur avancement."
+
+	if not GameState.has_player_channel():
+		page_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		page_description.text = "Créez d'abord votre première chaîne."
+		return
+
+	ProductionPageControllerScript.render(
+		content_container,
+		page_description,
+		GameState.get_group_programs(),
+		_on_create_production_requested
+	)
+
+
+func _on_create_production_requested() -> void:
+	page_description.text = "Création de production | prochaine étape : définir le formulaire de création avec les règles de format, durée, épisodes, coût et tournage."
 
 
 func _clear_dynamic_pages() -> void:
 	GroupPageControllerScript.clear(content_container)
 	TVGridPageControllerScript.clear(content_container)
 	ZapPageControllerScript.clear(content_container)
+	ProductionPageControllerScript.clear(content_container)
 
 
 func _scroll_main_to_top() -> void:
