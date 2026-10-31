@@ -11,7 +11,8 @@ static func render(
 	first_channel: Dictionary,
 	on_create_channel: Callable
 ) -> void:
-	_clear_dynamic_content(content_container)
+	clear(content_container)
+	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	page_description.text = "Dirigeant : %s\nCapital de départ : 1 200 CC" % player_name
 
 	var dynamic: VBoxContainer = VBoxContainer.new()
@@ -23,6 +24,12 @@ static func render(
 		_build_creation_form(dynamic, on_create_channel)
 	else:
 		_build_channel_summary(dynamic, first_channel)
+
+
+static func clear(content_container: VBoxContainer) -> void:
+	var existing: Node = content_container.get_node_or_null(DYNAMIC_NODE_NAME)
+	if existing != null:
+		existing.free()
 
 
 static func _build_creation_form(parent: VBoxContainer, on_create_channel: Callable) -> void:
@@ -89,9 +96,3 @@ static func _build_channel_summary(parent: VBoxContainer, channel: Dictionary) -
 		String(channel.get("theme", "Généraliste"))
 	]
 	parent.add_child(row)
-
-
-static func _clear_dynamic_content(content_container: VBoxContainer) -> void:
-	var existing: Node = content_container.get_node_or_null(DYNAMIC_NODE_NAME)
-	if existing != null:
-		existing.free()
