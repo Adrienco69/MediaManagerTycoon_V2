@@ -5,21 +5,39 @@ const DEFAULT_RANGE_ID: String = "21_00"
 
 const RANGES: Array[Dictionary] = [
 	{
-		"id": "00_06",
-		"label": "00h–06h",
+		"id": "00_03",
+		"label": "00h–03h",
 		"start_slot": 0,
+		"end_slot": 6
+	},
+	{
+		"id": "03_06",
+		"label": "03h–06h",
+		"start_slot": 6,
 		"end_slot": 12
 	},
 	{
-		"id": "06_12",
-		"label": "06h–12h",
+		"id": "06_09",
+		"label": "06h–09h",
 		"start_slot": 12,
+		"end_slot": 18
+	},
+	{
+		"id": "09_12",
+		"label": "09h–12h",
+		"start_slot": 18,
 		"end_slot": 24
 	},
 	{
-		"id": "12_18",
-		"label": "12h–18h",
+		"id": "12_15",
+		"label": "12h–15h",
 		"start_slot": 24,
+		"end_slot": 30
+	},
+	{
+		"id": "15_18",
+		"label": "15h–18h",
+		"start_slot": 30,
 		"end_slot": 36
 	},
 	{
@@ -49,7 +67,7 @@ static func build(
 		var range_id: String = String(range_data.get("id", ""))
 		var button: Button = Button.new()
 		button.text = String(range_data.get("label", ""))
-		button.custom_minimum_size = Vector2(105, 38)
+		button.custom_minimum_size = Vector2(86, 38)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.set_meta("time_range_id", range_id)
 		parent.add_child(button)
