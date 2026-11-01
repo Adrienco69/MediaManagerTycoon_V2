@@ -101,6 +101,9 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 			return
 
 	var program: Dictionary = (program_value as Dictionary).duplicate(true)
+	if _is_same_program_continuation(program):
+		return
+
 	var ignored_start: int = -1
 	if (
 		drag_type == "scheduled_program"
@@ -299,6 +302,24 @@ func _get_source_drag_data() -> Dictionary:
 		"source_day": source_day,
 		"source_slot": source_slot
 	}
+
+
+func _is_same_program_continuation(program: Dictionary) -> bool:
+	var day_slots: Array[Dictionary] = GameState.get_player_day_schedule(channel, week_number, day_index)
+	if slot_index < 0 or slot_index >= day_slots.size():
+		return false
+	var entry: Dictionary = day_slots[slot_index]
+	if entry.is_empty() or String(entry.get("kind", "")) != "continuation":
+		return false
+
+	var current_id: String = String(entry.get("program_id", ""))
+	var incoming_id: String = String(program.get("id", ""))
+	if not current_id.is_empty() and not incoming_id.is_empty():
+		return current_id == incoming_id
+
+	var current_name: String = String(entry.get("program_name", ""))
+	var incoming_name: String = String(program.get("name", ""))
+	return not current_name.is_empty() and current_name == incoming_name
 
 
 func _get_program_for_slot(slot_entry: Dictionary) -> Dictionary:
