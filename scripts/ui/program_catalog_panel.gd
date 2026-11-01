@@ -1,10 +1,13 @@
 class_name ProgramCatalogPanel
 extends RefCounted
 
-const ProgramDetailPopupScript = preload("res://scripts/ui/program_detail_popup.gd")
 
-
-static func build(parent: Control, editable: bool, programs: Array[Dictionary]) -> void:
+static func build(
+	parent: Control,
+	editable: bool,
+	programs: Array[Dictionary],
+	on_program_selected: Callable = Callable()
+) -> void:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -74,10 +77,12 @@ static func build(parent: Control, editable: bool, programs: Array[Dictionary]) 
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.custom_minimum_size = Vector2(0, 38)
+		button.disabled = not on_program_selected.is_valid()
 
-		var captured_program: Dictionary = program.duplicate(true)
-		var captured_button: Button = button
-		button.pressed.connect(func() -> void:
-			ProgramDetailPopupScript.open(captured_button, captured_program)
-		)
+		if on_program_selected.is_valid():
+			var captured_program: Dictionary = program.duplicate(true)
+			button.pressed.connect(func() -> void:
+				on_program_selected.call(captured_program)
+			)
+
 		list.add_child(button)
