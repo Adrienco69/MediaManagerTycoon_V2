@@ -1,6 +1,8 @@
 class_name MMTNRegistry
 extends RefCounted
 
+const MG1LaunchCatalogScript = preload("res://scripts/core/mg1_launch_catalog.gd")
+
 const INITIAL_LAUNCH_DATE: String = "Lundi 1 Floréal 0001"
 
 var _history: Array[Dictionary] = []
@@ -10,9 +12,19 @@ func reset() -> void:
 	_history.clear()
 
 
-func register_initial_channels(player_channel: Dictionary, player_company: String) -> void:
+func register_initial_channels(
+	player_channel: Dictionary,
+	player_company: String,
+	player_programs: Array[Dictionary],
+	mg1_series_telefilm: Dictionary
+) -> void:
 	if player_channel.is_empty() or not _history.is_empty():
 		return
+
+	var mg1_programs: Array[Dictionary] = MG1LaunchCatalogScript.build(
+		player_programs,
+		mg1_series_telefilm
+	)
 
 	_history.append({
 		"mmtn_number": 1,
@@ -21,7 +33,10 @@ func register_initial_channels(player_channel: Dictionary, player_company: Strin
 		"theme": "Généraliste",
 		"launch_date": INITIAL_LAUNCH_DATE,
 		"closed_date": "",
-		"is_open": true
+		"is_open": true,
+		"programs": mg1_programs,
+		"auto_schedule": true,
+		"schedule_seed": randi_range(100000, 999999999)
 	})
 
 	var player_entry: Dictionary = player_channel.duplicate(true)
