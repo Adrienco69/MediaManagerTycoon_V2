@@ -22,6 +22,14 @@ func assign_launch_programs(channel_name: String) -> void:
 	_programs = LaunchProgramCatalogScript.build(channel_name, player_series_telefilm)
 
 
+func load_data(programs: Array, distribution: Dictionary) -> void:
+	_programs.clear()
+	for value: Variant in programs:
+		if value is Dictionary:
+			_programs.append((value as Dictionary).duplicate(true))
+	_launch_series_telefilm_distribution = distribution.duplicate(true)
+
+
 func get_programs() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for program: Dictionary in _programs:
