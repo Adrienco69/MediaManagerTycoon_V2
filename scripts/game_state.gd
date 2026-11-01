@@ -306,8 +306,21 @@ func _advance_one_day() -> void:
 
 
 func _on_channel_created(channel: Dictionary) -> void:
-	_mmtn_registry.register_initial_channels(channel, company_name)
 	_production_manager.assign_launch_programs(String(channel.get("name", "")))
+
+	var player_programs: Array[Dictionary] = _production_manager.get_programs()
+	var distribution: Dictionary = _production_manager.get_launch_series_telefilm_distribution()
+	var mg1_series_telefilm_value: Variant = distribution.get("mg1", {})
+	var mg1_series_telefilm: Dictionary = {}
+	if mg1_series_telefilm_value is Dictionary:
+		mg1_series_telefilm = mg1_series_telefilm_value
+
+	_mmtn_registry.register_initial_channels(
+		channel,
+		company_name,
+		player_programs,
+		mg1_series_telefilm
+	)
 	programs_changed.emit()
 	channel_created.emit(channel)
 
