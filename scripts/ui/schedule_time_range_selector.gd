@@ -51,7 +51,7 @@ static func build(
 		button.text = String(range_data.get("label", ""))
 		button.custom_minimum_size = Vector2(105, 38)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.disabled = range_id == selected_range_id
+		button.set_meta("time_range_id", range_id)
 		parent.add_child(button)
 
 		if on_range_selected.is_valid():
@@ -59,6 +59,16 @@ static func build(
 			button.pressed.connect(func() -> void:
 				on_range_selected.call(captured_range_id)
 			)
+
+	select(parent, selected_range_id)
+
+
+static func select(parent: HBoxContainer, selected_range_id: String) -> void:
+	for child: Node in parent.get_children():
+		if not child is Button:
+			continue
+		var button: Button = child as Button
+		button.disabled = String(button.get_meta("time_range_id", "")) == selected_range_id
 
 
 static func get_range(range_id: String) -> Dictionary:
