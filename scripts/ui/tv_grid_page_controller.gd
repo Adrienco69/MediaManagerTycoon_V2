@@ -19,6 +19,8 @@ static func render(
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	page_description.text = _get_description(channel, editable)
 
+	var displayed_programs: Array[Dictionary] = _get_displayed_programs(channel, programs, editable)
+
 	var dynamic: VBoxContainer = VBoxContainer.new()
 	dynamic.name = DYNAMIC_NODE_NAME
 	dynamic.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -44,7 +46,7 @@ static func render(
 	catalog_holder.size_flags_stretch_ratio = 1.0
 	catalog_holder.custom_minimum_size = Vector2(220, 0)
 	body.add_child(catalog_holder)
-	ProgramCatalogPanelScript.build(catalog_holder, editable, programs)
+	ProgramCatalogPanelScript.build(catalog_holder, editable, displayed_programs)
 
 	var scheduler_holder: VBoxContainer = VBoxContainer.new()
 	scheduler_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -59,7 +61,13 @@ static func render(
 
 	var rebuild_schedule: Callable = func(week_number: int) -> void:
 		_clear_holder(schedule_holder)
-		DayScheduleBuilderScript.build(schedule_holder, week_number, editable)
+		DayScheduleBuilderScript.build(
+			schedule_holder,
+			week_number,
+			editable,
+			channel,
+			displayed_programs
+		)
 
 	var selector_row: HBoxContainer = WeekSelectorScript.build(rebuild_schedule)
 	scheduler_holder.add_child(selector_row)
@@ -73,6 +81,27 @@ static func clear(content_container: VBoxContainer) -> void:
 	if existing != null:
 		content_container.remove_child(existing)
 		existing.queue_free()
+
+
+static func _get_displayed_programs(
+	channel: Dictionary,
+	provided_programs: Array[Dictionary],
+	editable: bool
+) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for program: Dictionary in provided_programs:
+		result.append(program.duplicate(true))
+
+	if editable or not result.is_empty():
+		return result
+
+	var channel_programs_value: Variant = channel.get("programs", [])
+	if channel_programs_value is Array:
+		for value: Variant in channel_programs_value:
+			if value is Dictionary:
+				result.append((value as Dictionary).duplicate(true))
+
+	return result
 
 
 static func _get_description(channel: Dictionary, editable: bool) -> String:
