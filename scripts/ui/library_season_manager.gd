@@ -43,13 +43,12 @@ static func render(
 	_add_field(form, "Saison", season_input)
 
 	var code_select := OptionButton.new()
-	code_select.custom_minimum_size = Vector2(360, 40)
+	code_select.custom_minimum_size = Vector2(320, 40)
 	_add_field(form, "Code prod", code_select)
 
 	var add_button := Button.new()
-	add_button.text = "Ajouter le code prod"
+	add_button.text = "Ajouter à la saison"
 	add_button.custom_minimum_size = Vector2(220, 40)
-	add_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	dynamic.add_child(add_button)
 
 	var selected_title := Label.new()
@@ -61,25 +60,8 @@ static func render(
 	selected_holder.add_theme_constant_override("separation", 6)
 	dynamic.add_child(selected_holder)
 
-	var selected_codes: Array[int] = []
-
-	var refresh_selection: Callable = func() -> void:
-		_refresh_code_dropdown(code_select, program, selected_codes)
-		_rebuild_selected_codes(selected_holder, selected_codes, refresh_selection)
-		add_button.disabled = code_select.item_count <= 0
-
-	add_button.pressed.connect(func() -> void:
-		if code_select.item_count <= 0 or code_select.selected < 0:
-			return
-		var code_prod := int(code_select.get_item_metadata(code_select.selected))
-		if code_prod <= 0 or selected_codes.has(code_prod):
-			return
-		selected_codes.append(code_prod)
-		refresh_selection.call()
-	)
-
 	var help := Label.new()
-	help.text = "Ajoutez les codes prod dans l'ordre voulu. Leur position devient leur numéro d'épisode dans la saison."
+	help.text = "L'ordre d'ajout devient l'ordre éditorial de la saison. Un code prod sélectionné disparaît du menu jusqu'à ce qu'il soit retiré."
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dynamic.add_child(help)
 
@@ -93,15 +75,70 @@ static func render(
 	save_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	dynamic.add_child(save_button)
 
+	var selected_codes: Array[int] = []
+
+	var rebuild_selected_codes: Callable
+	var refresh_selection: Callable
+
+	rebuild_selected_codes = func() -> void:
+		for child: Node in selected_holder.get_children():
+			selected_holder.remove_child(child)
+			child.queue_free()
+
+		if selected_codes.is_empty():
+			var empty_label := Label.new()
+			empty_label.text = "Aucune unité sélectionnée."
+			selected_holder.add_child(empty_label)
+			return
+
+		for index: int in range(selected_codes.size()):
+			var code_prod: int = selected_codes[index]
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 8)
+			selected_holder.add_child(row)
+
+			var label := Label.new()
+			label.text = "Épisode %d → Code prod %d" % [index + 1, code_prod]
+			label.custom_minimum_size = Vector2(280, 36)
+			label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			row.add_child(label)
+
+			var remove_button := Button.new()
+			remove_button.text = "Retirer"
+			remove_button.pressed.connect(func() -> void:
+				selected_codes.erase(code_prod)
+				refresh_selection.call()
+			)
+			row.add_child(remove_button)
+
+	refresh_selection = func() -> void:
+		_refresh_code_dropdown(code_select, program, selected_codes)
+		rebuild_selected_codes.call()
+		add_button.disabled = code_select.item_count <= 0
+
+	add_button.pressed.connect(func() -> void:
+		if code_select.item_count <= 0 or code_select.selected < 0:
+			return
+
+		var code_prod := int(code_select.get_item_metadata(code_select.selected))
+		if code_prod <= 0 or selected_codes.has(code_prod):
+			return
+
+		selected_codes.append(code_prod)
+		refresh_selection.call()
+	)
+
 	save_button.pressed.connect(func() -> void:
 		if selected_codes.is_empty():
 			error_label.text = "Ajoute au moins un code prod."
 			return
+
 		var result: Variant = on_save_season.call(int(season_input.value), selected_codes.duplicate())
 		var error_text := String(result)
 		if not error_text.is_empty():
 			error_label.text = error_text
 			return
+
 		error_label.text = "Saison enregistrée."
 	)
 
@@ -132,6 +169,7 @@ static func _refresh_code_dropdown(
 	selected_codes: Array[int]
 ) -> void:
 	code_select.clear()
+
 	var units_value: Variant = program.get("units", [])
 	if not units_value is Array:
 		return
@@ -139,55 +177,18 @@ static func _refresh_code_dropdown(
 	for value: Variant in units_value:
 		if not value is Dictionary:
 			continue
+
 		var unit: Dictionary = value
-		var code_prod := int(unit.get("code_prod", 0))
-		var season := int(unit.get("season", 0))
-		if code_prod <= 0:
+		var code_prod: int = int(unit.get("code_prod", 0))
+		var season: int = int(unit.get("season", 0))
+		if code_prod <= 0 or season > 0 or selected_codes.has(code_prod):
 			continue
-		if selected_codes.has(code_prod):
-			continue
-		if season > 0:
-			continue
-		var index := code_select.item_count
+
 		code_select.add_item("Code prod %d" % code_prod)
-		code_select.set_item_metadata(index, code_prod)
+		code_select.set_item_metadata(code_select.item_count - 1, code_prod)
 
-
-static func _rebuild_selected_codes(
-	holder: VBoxContainer,
-	selected_codes: Array[int],
-	on_change: Callable
-) -> void:
-	for child: Node in holder.get_children():
-		holder.remove_child(child)
-		child.queue_free()
-
-	if selected_codes.is_empty():
-		var empty := Label.new()
-		empty.text = "Aucun code prod sélectionné."
-		holder.add_child(empty)
-		return
-
-	for editorial_index: int in range(selected_codes.size()):
-		var code_prod := selected_codes[editorial_index]
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		holder.add_child(row)
-
-		var label := Label.new()
-		label.text = "Épisode %d → Code prod %d" % [editorial_index + 1, code_prod]
-		label.custom_minimum_size = Vector2(300, 38)
-		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		row.add_child(label)
-
-		var remove_button := Button.new()
-		remove_button.text = "Retirer"
-		remove_button.custom_minimum_size = Vector2(100, 38)
-		remove_button.pressed.connect(func() -> void:
-			selected_codes.erase(code_prod)
-			on_change.call()
-		)
-		row.add_child(remove_button)
+	if code_select.item_count > 0:
+		code_select.select(0)
 
 
 static func _next_season_number(program: Dictionary) -> int:
