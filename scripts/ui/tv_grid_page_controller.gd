@@ -13,7 +13,8 @@ static func render(
 	channel: Dictionary,
 	editable: bool,
 	programs: Array[Dictionary],
-	on_back: Callable = Callable()
+	on_back: Callable = Callable(),
+	on_program_selected: Callable = Callable()
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -39,10 +40,28 @@ static func render(
 		back_button.pressed.connect(on_back)
 		dynamic.add_child(back_button)
 
+	var top_row: HBoxContainer = HBoxContainer.new()
+	top_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_row.add_theme_constant_override("separation", 12)
+	dynamic.add_child(top_row)
+
+	var week_holder: HBoxContainer = HBoxContainer.new()
+	week_holder.custom_minimum_size = Vector2(220, 0)
+	week_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	week_holder.size_flags_stretch_ratio = 1.0
+	top_row.add_child(week_holder)
+
+	var days_holder: HBoxContainer = HBoxContainer.new()
+	days_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	days_holder.size_flags_stretch_ratio = 3.0
+	days_holder.add_theme_constant_override("separation", 6)
+	top_row.add_child(days_holder)
+
 	var body: HBoxContainer = HBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 12)
+	dynamic.add_child(body)
 
 	var catalog_holder: VBoxContainer = VBoxContainer.new()
 	catalog_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -50,7 +69,12 @@ static func render(
 	catalog_holder.size_flags_stretch_ratio = 1.0
 	catalog_holder.custom_minimum_size = Vector2(220, 0)
 	body.add_child(catalog_holder)
-	ProgramCatalogPanelScript.build(catalog_holder, editable, displayed_programs)
+	ProgramCatalogPanelScript.build(
+		catalog_holder,
+		editable,
+		displayed_programs,
+		on_program_selected
+	)
 
 	var scheduler_holder: VBoxContainer = VBoxContainer.new()
 	scheduler_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -62,31 +86,24 @@ static func render(
 	var schedule_holder: VBoxContainer = VBoxContainer.new()
 	schedule_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	schedule_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scheduler_holder.add_child(schedule_holder)
 
 	var rebuild_schedule: Callable = func(week_number: int) -> void:
 		_clear_holder(schedule_holder)
+		_clear_holder(days_holder)
 		DayScheduleBuilderScript.build(
 			schedule_holder,
 			week_number,
 			editable,
 			channel,
-			displayed_programs
+			displayed_programs,
+			on_program_selected,
+			days_holder
 		)
 
 	var selector_row: HBoxContainer = WeekSelectorScript.build(rebuild_schedule)
-
-	if editable:
-		# Sur la grille du joueur, la semaine remplace l'ancien texte descriptif
-		# afin de remonter au maximum les boutons Lundi à Dimanche.
-		dynamic.add_child(selector_row)
-		dynamic.add_child(body)
-		scheduler_holder.add_child(schedule_holder)
-	else:
-		# Dans Zap'Chaine, on conserve le bouton retour et le sélecteur
-		# directement au-dessus de la grille consultée.
-		dynamic.add_child(body)
-		scheduler_holder.add_child(selector_row)
-		scheduler_holder.add_child(schedule_holder)
+	selector_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	week_holder.add_child(selector_row)
 
 	rebuild_schedule.call(1)
 
@@ -139,7 +156,7 @@ static func _get_description(channel: Dictionary, editable: bool) -> String:
 	return "Chaîne : %s | consultation uniquement, aucune modification possible." % channel_name
 
 
-static func _clear_holder(holder: VBoxContainer) -> void:
+static func _clear_holder(holder: Control) -> void:
 	for child: Node in holder.get_children():
 		holder.remove_child(child)
 		child.queue_free()
