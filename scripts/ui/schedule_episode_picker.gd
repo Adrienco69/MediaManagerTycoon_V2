@@ -5,6 +5,9 @@ const ScheduleEpisodeHelperScript = preload("res://scripts/ui/schedule_episode_h
 
 const FREQUENCY_WEEKLY: int = 0
 const FREQUENCY_DAILY: int = 1
+const SLOT_MINUTES: int = 30
+const SLOTS_PER_DAY: int = 48
+const DAYS_PER_YEAR: int = 364
 const DAY_NAMES: Array[String] = [
 	"Lundi",
 	"Mardi",
@@ -90,7 +93,7 @@ static func open(
 
 	var frequency_label: Label = Label.new()
 	frequency_label.text = "Fréquence :"
-	frequency_label.custom_minimum_size = Vector2(140, 0)
+	frequency_label.custom_minimum_size = Vector2(170, 0)
 	frequency_row.add_child(frequency_label)
 
 	var frequency_selector: OptionButton = OptionButton.new()
@@ -100,29 +103,65 @@ static func open(
 	frequency_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	frequency_row.add_child(frequency_selector)
 
-	var quantity_row: HBoxContainer = HBoxContainer.new()
-	quantity_row.add_theme_constant_override("separation", 8)
-	automation_box.add_child(quantity_row)
+	var episodes_per_row: HBoxContainer = HBoxContainer.new()
+	episodes_per_row.add_theme_constant_override("separation", 8)
+	automation_box.add_child(episodes_per_row)
 
-	var quantity_label: Label = Label.new()
-	quantity_label.text = "Nombre d'épisodes :"
-	quantity_label.custom_minimum_size = Vector2(140, 0)
-	quantity_row.add_child(quantity_label)
+	var episodes_per_label: Label = Label.new()
+	episodes_per_label.text = "Épisodes par soirée :"
+	episodes_per_label.custom_minimum_size = Vector2(170, 0)
+	episodes_per_row.add_child(episodes_per_label)
 
-	var quantity_spinner: SpinBox = SpinBox.new()
-	quantity_spinner.min_value = 1
-	quantity_spinner.max_value = episode_count
-	quantity_spinner.step = 1
-	quantity_spinner.value = 1
-	quantity_spinner.allow_greater = false
-	quantity_spinner.allow_lesser = false
-	quantity_spinner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	quantity_row.add_child(quantity_spinner)
+	var episodes_per_spinner: SpinBox = SpinBox.new()
+	episodes_per_spinner.min_value = 1
+	episodes_per_spinner.max_value = episode_count
+	episodes_per_spinner.step = 1
+	episodes_per_spinner.value = 1
+	episodes_per_spinner.allow_greater = false
+	episodes_per_spinner.allow_lesser = false
+	episodes_per_spinner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	episodes_per_row.add_child(episodes_per_spinner)
+
+	var period_row: HBoxContainer = HBoxContainer.new()
+	period_row.add_theme_constant_override("separation", 8)
+	automation_box.add_child(period_row)
+
+	var period_label: Label = Label.new()
+	period_label.text = "Nombre de semaines :"
+	period_label.custom_minimum_size = Vector2(170, 0)
+	period_row.add_child(period_label)
+
+	var period_spinner: SpinBox = SpinBox.new()
+	period_spinner.min_value = 1
+	period_spinner.max_value = maxi(53 - week_number, 1)
+	period_spinner.step = 1
+	period_spinner.value = 1
+	period_spinner.allow_greater = false
+	period_spinner.allow_lesser = false
+	period_spinner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	period_row.add_child(period_spinner)
 
 	var automation_hint: Label = Label.new()
-	automation_hint.text = "Choisissez le nombre d'épisodes, puis « Automatiser depuis ici ». Hebdomadaire = un épisode par semaine ; quotidienne = un épisode par jour, au même horaire."
+	automation_hint.text = "Hebdomadaire : choisissez le nombre d'épisodes diffusés à la suite chaque soirée et le nombre de semaines."
 	automation_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	automation_box.add_child(automation_hint)
+
+	frequency_selector.item_selected.connect(func(_index: int) -> void:
+		var frequency_id: int = frequency_selector.get_selected_id()
+		if frequency_id == FREQUENCY_DAILY:
+			episodes_per_label.text = "Épisodes par jour :"
+			period_label.text = "Nombre de jours :"
+			var start_absolute_day: int = ((week_number - 1) * 7) + day_index
+			period_spinner.max_value = maxi(DAYS_PER_YEAR - start_absolute_day, 1)
+			automation_hint.text = "Quotidienne : choisissez le nombre d'épisodes diffusés à la suite chaque jour et le nombre de jours."
+		else:
+			episodes_per_label.text = "Épisodes par soirée :"
+			period_label.text = "Nombre de semaines :"
+			period_spinner.max_value = maxi(53 - week_number, 1)
+			automation_hint.text = "Hebdomadaire : choisissez le nombre d'épisodes diffusés à la suite chaque soirée et le nombre de semaines."
+		if period_spinner.value > period_spinner.max_value:
+			period_spinner.value = period_spinner.max_value
+	)
 
 	var separator: HSeparator = HSeparator.new()
 	content.add_child(separator)
@@ -208,7 +247,8 @@ static func open(
 
 		auto_button.pressed.connect(func() -> void:
 			var frequency_id: int = frequency_selector.get_selected_id()
-			var requested_quantity: int = int(quantity_spinner.value)
+			var episodes_per_period: int = int(episodes_per_spinner.value)
+			var period_count: int = int(period_spinner.value)
 			var result: Dictionary = _auto_schedule_episodes(
 				channel,
 				week_number,
@@ -216,7 +256,8 @@ static func open(
 				slot_index,
 				program,
 				captured_global_episode,
-				requested_quantity,
+				episodes_per_period,
+				period_count,
 				frequency_id,
 				replace_existing
 			)
@@ -236,25 +277,23 @@ static func open(
 		if is_instance_valid(popup):
 			popup.queue_free()
 	)
-	popup.popup_centered(Vector2i(700, 650))
+	popup.popup_centered(Vector2i(700, 700))
 
 
 static func _auto_schedule_episodes(
 	channel: Dictionary,
 	start_week: int,
 	start_day: int,
-	slot_index: int,
+	start_slot: int,
 	program: Dictionary,
 	start_global_episode: int,
-	requested_quantity: int,
+	episodes_per_period: int,
+	period_count: int,
 	frequency_id: int,
 	replace_first: bool = false
 ) -> Dictionary:
 	var episode_count: int = ScheduleEpisodeHelperScript.get_episode_count(program)
-	var quantity: int = mini(
-		maxi(requested_quantity, 1),
-		episode_count - start_global_episode + 1
-	)
+	var requested_count: int = maxi(episodes_per_period, 1) * maxi(period_count, 1)
 	var scheduled_count: int = 0
 	var stop_reason: String = ""
 	var frequency_name: String = "daily" if frequency_id == FREQUENCY_DAILY else "weekly"
@@ -262,79 +301,101 @@ static func _auto_schedule_episodes(
 		String(program.get("id", program.get("name", "program"))),
 		start_week,
 		start_day,
-		slot_index,
+		start_slot,
 		Time.get_ticks_msec()
 	]
+	var slots_per_episode: int = maxi(
+		1,
+		int(ceil(float(maxi(int(program.get("duration_minutes", SLOT_MINUTES)), SLOT_MINUTES)) / float(SLOT_MINUTES)))
+	)
+	var first_write: bool = true
+	var base_absolute_day: int = ((start_week - 1) * 7) + start_day
 
-	for offset: int in range(quantity):
-		var target_week: int = start_week
-		var target_day: int = start_day
-
+	for period_index: int in range(maxi(period_count, 1)):
+		var period_absolute_day: int = base_absolute_day
 		if frequency_id == FREQUENCY_DAILY:
-			var absolute_day: int = ((start_week - 1) * 7) + start_day + offset
-			if absolute_day >= 364:
-				stop_reason = "La fin de l'année 1 a été atteinte."
-				break
-			target_week = int(absolute_day / 7) + 1
-			target_day = absolute_day % 7
+			period_absolute_day += period_index
 		else:
-			target_week = start_week + offset
-			if target_week > 52:
-				stop_reason = "La fin de l'année 1 a été atteinte."
-				break
+			period_absolute_day += period_index * 7
 
-		var global_episode: int = start_global_episode + offset
-		var episode_data: Dictionary = ScheduleEpisodeHelperScript.get_episode_data(
-			program,
-			global_episode
-		)
-		if episode_data.is_empty():
-			stop_reason = "Aucun épisode disponible pour poursuivre l'automatisation."
+		if period_absolute_day >= DAYS_PER_YEAR:
+			stop_reason = "La fin de l'année 1 a été atteinte."
 			break
-		episode_data["automation_id"] = automation_id
-		episode_data["automation_frequency"] = frequency_name
 
-		var placed: bool = false
-		if offset == 0 and replace_first:
-			placed = GameState.replace_scheduled_program(
-				channel,
-				target_week,
-				target_day,
-				slot_index,
+		var cursor_absolute_slot: int = (period_absolute_day * SLOTS_PER_DAY) + start_slot
+
+		for _episode_in_period: int in range(maxi(episodes_per_period, 1)):
+			var global_episode: int = start_global_episode + scheduled_count
+			if global_episode > episode_count:
+				stop_reason = "Aucun épisode disponible pour poursuivre l'automatisation."
+				break
+
+			var target_absolute_day: int = int(cursor_absolute_slot / SLOTS_PER_DAY)
+			if target_absolute_day >= DAYS_PER_YEAR:
+				stop_reason = "La fin de l'année 1 a été atteinte."
+				break
+
+			var target_week: int = int(target_absolute_day / 7) + 1
+			var target_day: int = target_absolute_day % 7
+			var target_slot: int = cursor_absolute_slot % SLOTS_PER_DAY
+
+			var episode_data: Dictionary = ScheduleEpisodeHelperScript.get_episode_data(
 				program,
-				episode_data
+				global_episode
 			)
-		else:
-			if not GameState.can_schedule_program(
-				channel,
-				target_week,
-				target_day,
-				slot_index,
-				program
-			):
-				stop_reason = "Un créneau est déjà occupé en semaine %d, %s à %s." % [
+			if episode_data.is_empty():
+				stop_reason = "Aucun épisode disponible pour poursuivre l'automatisation."
+				break
+			episode_data["automation_id"] = automation_id
+			episode_data["automation_frequency"] = frequency_name
+
+			var placed: bool = false
+			if first_write and replace_first:
+				placed = GameState.replace_scheduled_program(
+					channel,
 					target_week,
-					_get_day_name(target_day),
-					_get_time_text(slot_index)
-				]
-				break
-			placed = GameState.schedule_program(
-				channel,
-				target_week,
-				target_day,
-				slot_index,
-				program,
-				episode_data
-			)
+					target_day,
+					target_slot,
+					program,
+					episode_data
+				)
+			else:
+				if not GameState.can_schedule_program(
+					channel,
+					target_week,
+					target_day,
+					target_slot,
+					program
+				):
+					stop_reason = "Un créneau est déjà occupé en semaine %d, %s à %s." % [
+						target_week,
+						_get_day_name(target_day),
+						_get_time_text(target_slot)
+					]
+					break
+				placed = GameState.schedule_program(
+					channel,
+					target_week,
+					target_day,
+					target_slot,
+					program,
+					episode_data
+				)
 
-		if not placed:
-			stop_reason = "La programmation s'est arrêtée sur un créneau incompatible."
+			if not placed:
+				stop_reason = "La programmation s'est arrêtée sur un créneau incompatible."
+				break
+
+			first_write = false
+			scheduled_count += 1
+			cursor_absolute_slot += slots_per_episode
+
+		if not stop_reason.is_empty():
 			break
-		scheduled_count += 1
 
 	return {
 		"scheduled_count": scheduled_count,
-		"requested_count": quantity,
+		"requested_count": requested_count,
 		"stop_reason": stop_reason
 	}
 
@@ -425,7 +486,7 @@ static func _get_day_name(day_index: int) -> String:
 
 
 static func _get_time_text(slot_index: int) -> String:
-	var total_minutes: int = slot_index * 30
+	var total_minutes: int = slot_index * SLOT_MINUTES
 	var hour: int = int(total_minutes / 60)
 	var minute: int = total_minutes % 60
 	return "%02dh%02d" % [hour, minute]
