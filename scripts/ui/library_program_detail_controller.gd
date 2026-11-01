@@ -59,6 +59,7 @@ static func render(
 
 	var callbacks: Dictionary = {}
 	var manage_seasons_callable: Callable = on_manage_seasons
+	var is_zap_read_only: bool = back_button_text.contains("Zap'Chaine")
 
 	callbacks["show_info"] = func() -> void:
 		_clear_holder(tab_content)
@@ -71,7 +72,7 @@ static func render(
 			current_program = program
 		_build_program_info(tab_content, current_program, manage_seasons_callable)
 
-	if not manage_seasons_callable.is_valid() and _can_manage_seasons(program):
+	if not is_zap_read_only and not manage_seasons_callable.is_valid() and _can_manage_seasons(program):
 		manage_seasons_callable = func() -> void:
 			_clear_holder(tab_content)
 			info_button.disabled = false
@@ -158,20 +159,7 @@ static func _can_manage_seasons(program: Dictionary) -> bool:
 	var format_name: String = String(program.get("format", ""))
 	if format_name == "Film" or format_name == "Téléfilm":
 		return false
-	if int(program.get("units_total", program.get("episodes_total", 0))) <= 1:
-		return false
-	if bool(program.get("owned_by_group", false)):
-		return true
-
-	var program_id: String = String(program.get("id", ""))
-	if program_id.is_empty():
-		return false
-	for group_program_value: Variant in GameState.get_group_programs():
-		if group_program_value is Dictionary:
-			var group_program: Dictionary = group_program_value
-			if String(group_program.get("id", "")) == program_id:
-				return true
-	return false
+	return int(program.get("units_total", program.get("episodes_total", 0))) > 1
 
 
 static func _add_season_info_row(table: GridContainer, value_text: String, on_manage_seasons: Callable) -> void:
