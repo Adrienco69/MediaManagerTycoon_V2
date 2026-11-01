@@ -56,6 +56,7 @@ var _main_content_scroll: ScrollContainer
 var _save_button: Button
 var _main_menu_button: Button
 var _save_status_label: Label
+var _continue_game_button: Button
 var _quit_game_button: Button
 
 
@@ -83,6 +84,7 @@ func _ready() -> void:
 	_save_button = header_actions.get("save_button") as Button
 	_main_menu_button = header_actions.get("menu_button") as Button
 	_save_status_label = header_actions.get("status_label") as Label
+	_continue_game_button = StartMenuControllerScript.ensure_continue_button(home_panel, _continue_game)
 	_quit_game_button = StartMenuControllerScript.ensure_quit_button(home_panel, _quit_game)
 
 	_connect_game_signals()
@@ -145,9 +147,14 @@ func _show_start_screen() -> void:
 		start_error_label,
 		SaveGameManagerScript.has_save()
 	)
+	if _continue_game_button != null:
+		_continue_game_button.visible = GameState.has_started_game()
 	if _save_status_label != null:
 		_save_status_label.text = ""
-	new_game_menu_button.grab_focus()
+	if _continue_game_button != null and _continue_game_button.visible:
+		_continue_game_button.grab_focus()
+	else:
+		new_game_menu_button.grab_focus()
 
 
 func _show_new_game_form() -> void:
@@ -165,6 +172,17 @@ func _show_game_ui() -> void:
 	if _save_status_label != null:
 		_save_status_label.text = ""
 	_show_group()
+
+
+func _continue_game() -> void:
+	if not GameState.has_started_game():
+		return
+	start_screen.visible = false
+	game_ui.visible = true
+	if _save_status_label != null:
+		_save_status_label.text = ""
+	# La partie reste volontairement en pause après un passage par le menu.
+	# L'écran qui était affiché est conservé tel quel en mémoire.
 
 
 func _on_identity_text_submitted(_text: String) -> void:
@@ -334,7 +352,29 @@ func _show_grid() -> void:
 		page_description,
 		channel,
 		true,
-		GameState.get_group_programs()
+		GameState.get_group_programs(),
+		Callable(),
+		_show_grid_program
+	)
+
+
+func _show_grid_program(program: Dictionary) -> void:
+	_clear_dynamic_pages()
+	_scroll_main_to_top()
+	NavigationButtonStateScript.apply(_get_navigation_buttons(), grid_button)
+
+	var program_id: String = String(program.get("id", ""))
+	var current_program: Dictionary = GameState.get_program(program_id)
+	if current_program.is_empty():
+		current_program = program
+
+	page_title.text = "Programme | %s" % String(current_program.get("name", "Programme"))
+	LibraryProgramDetailControllerScript.render(
+		content_container,
+		page_description,
+		current_program,
+		_show_grid,
+		"← Retour à la Grille TV"
 	)
 
 
@@ -356,13 +396,31 @@ func _show_zap_channel_schedule(channel: Dictionary) -> void:
 	_scroll_main_to_top()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
 	page_title.text = "Zap'Chaine | %s" % String(channel.get("name", ""))
+
+	var captured_channel: Dictionary = channel.duplicate(true)
 	TVGridPageControllerScript.render(
 		content_container,
 		page_description,
 		channel,
 		false,
 		[],
-		_show_zap
+		_show_zap,
+		_show_zap_program.bind(captured_channel)
+	)
+
+
+func _show_zap_program(program: Dictionary, channel: Dictionary) -> void:
+	_clear_dynamic_pages()
+	_scroll_main_to_top()
+	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
+
+	page_title.text = "Programme | %s" % String(program.get("name", "Programme"))
+	LibraryProgramDetailControllerScript.render(
+		content_container,
+		page_description,
+		program,
+		_show_zap_channel_schedule.bind(channel.duplicate(true)),
+		"← Retour à Zap'Chaine | %s" % String(channel.get("name", ""))
 	)
 
 
