@@ -3,6 +3,7 @@ extends RefCounted
 
 const ProgramStatusScript = preload("res://scripts/ui/library_program_status.gd")
 const EpisodeTableScript = preload("res://scripts/ui/library_program_episode_table.gd")
+const SeasonManagerScript = preload("res://scripts/ui/library_season_manager.gd")
 
 const DYNAMIC_NODE_NAME: String = "LibraryProgramDetailDynamic"
 const INFO_WIDTHS: Array[float] = [230.0, 420.0]
@@ -56,26 +57,66 @@ static func render(
 	tab_content.add_theme_constant_override("separation", 12)
 	dynamic.add_child(tab_content)
 
-	var show_info: Callable = func() -> void:
+	var show_info: Callable
+	var manage_seasons_callable: Callable = on_manage_seasons
+
+	if not manage_seasons_callable.is_valid() and _can_manage_seasons(program):
+		manage_seasons_callable = func() -> void:
+			_clear_holder(tab_content)
+			info_button.disabled = false
+			production_diffusion_button.disabled = false
+			season_diffusion_button.disabled = false
+			var current_program: Dictionary = GameState.get_program(String(program.get("id", "")))
+			if current_program.is_empty():
+				current_program = program.duplicate(true)
+			SeasonManagerScript.render(
+				tab_content,
+				page_description,
+				current_program,
+				func() -> void: show_info.call(),
+				func(season_number: int, codes: Array[int]) -> String:
+					var error_text: String = GameState._production_manager.set_editorial_season(
+						String(current_program.get("id", "")),
+						season_number,
+						codes
+					)
+					if error_text.is_empty():
+						GameState.programs_changed.emit()
+					return error_text
+			)
+
+	show_info = func() -> void:
 		_clear_holder(tab_content)
+		page_description.text = "Fiche du programme | informations et historique des diffusions."
 		info_button.disabled = true
 		production_diffusion_button.disabled = false
 		season_diffusion_button.disabled = false
-		_build_program_info(tab_content, program, on_manage_seasons)
+		var current_program: Dictionary = GameState.get_program(String(program.get("id", "")))
+		if current_program.is_empty():
+			current_program = program
+		_build_program_info(tab_content, current_program, manage_seasons_callable)
 
 	var show_production_diffusion: Callable = func() -> void:
 		_clear_holder(tab_content)
+		page_description.text = "Diffusions classées selon le code prod des unités."
 		info_button.disabled = false
 		production_diffusion_button.disabled = true
 		season_diffusion_button.disabled = false
-		EpisodeTableScript.build_by_production(tab_content, program)
+		var current_program: Dictionary = GameState.get_program(String(program.get("id", "")))
+		if current_program.is_empty():
+			current_program = program
+		EpisodeTableScript.build_by_production(tab_content, current_program)
 
 	var show_season_diffusion: Callable = func() -> void:
 		_clear_holder(tab_content)
+		page_description.text = "Diffusions classées selon le découpage éditorial en saisons."
 		info_button.disabled = false
 		production_diffusion_button.disabled = false
 		season_diffusion_button.disabled = true
-		EpisodeTableScript.build_by_season(tab_content, program)
+		var current_program: Dictionary = GameState.get_program(String(program.get("id", "")))
+		if current_program.is_empty():
+			current_program = program
+		EpisodeTableScript.build_by_season(tab_content, current_program)
 
 	info_button.pressed.connect(show_info)
 	production_diffusion_button.pressed.connect(show_production_diffusion)
@@ -112,7 +153,7 @@ static func _can_manage_seasons(program: Dictionary) -> bool:
 	var format_name: String = String(program.get("format", ""))
 	if format_name == "Film" or format_name == "Téléfilm":
 		return false
-	return int(program.get("units_total", program.get("episodes_total", 0))) > 1
+	return bool(program.get("owned_by_group", false)) and int(program.get("units_total", program.get("episodes_total", 0))) > 1
 
 
 static func _add_season_info_row(table: GridContainer, value_text: String, on_manage_seasons: Callable) -> void:
@@ -202,6 +243,7 @@ static func _add_panel_label(table: GridContainer, text: String, width: float, i
 
 
 static func _clear_holder(holder: VBoxContainer) -> void:
+	SeasonManagerScript.clear(holder)
 	for child: Node in holder.get_children():
 		holder.remove_child(child)
 		child.queue_free()
