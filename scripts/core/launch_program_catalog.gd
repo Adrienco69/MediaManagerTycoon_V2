@@ -14,10 +14,15 @@ static func build(channel_name: String, player_series_telefilm: Dictionary) -> A
 	programs.append(_program("Notre monde en crises", "Shortcom", 30, 25, 25))
 	programs.append(_program("Le futur pour un passée", "Shortcom", 30, 50, 50))
 
-	# Au lancement, le groupe possède déjà tous les épisodes.
-	# La limite d'un inédit chaîne par semaine est une règle de programmation,
-	# pas une limitation du nombre d'épisodes possédés.
-	programs.append(_program("La vie du lycée", "Série", 30, 21, 21))
+	# Tous les épisodes de lancement sont déjà possédés par le groupe.
+	# La limite des inédits chaîne relève uniquement de la programmation.
+	programs.append(_seasoned_program(
+		"La vie du lycée",
+		"Série",
+		90,
+		7,
+		11
+	))
 	programs.append(_program("Une famille presque parfaite", "Série", 60, 21, 21))
 
 	if not player_series_telefilm.is_empty():
@@ -47,6 +52,40 @@ static func build(channel_name: String, player_series_telefilm: Dictionary) -> A
 	var telefilm_index: int = randi_range(0, TELEFILMS.size() - 1)
 	programs.append(_program(TELEFILMS[telefilm_index], "Téléfilm", 150, 1, 1))
 	return programs
+
+
+static func _seasoned_program(
+	name: String,
+	format_name: String,
+	duration_minutes: int,
+	season_count: int,
+	episodes_per_season: int
+) -> Dictionary:
+	var total_episodes: int = season_count * episodes_per_season
+	var program: Dictionary = _program(
+		name,
+		format_name,
+		duration_minutes,
+		total_episodes,
+		total_episodes
+	)
+	program["season_count"] = season_count
+	program["seasons"] = _build_equal_seasons(season_count, episodes_per_season)
+	return program
+
+
+static func _build_equal_seasons(season_count: int, episodes_per_season: int) -> Array[Dictionary]:
+	var seasons: Array[Dictionary] = []
+	for season_number: int in range(1, season_count + 1):
+		var first_episode: int = ((season_number - 1) * episodes_per_season) + 1
+		var last_episode: int = first_episode + episodes_per_season - 1
+		seasons.append({
+			"number": season_number,
+			"episode_count": episodes_per_season,
+			"first_episode": first_episode,
+			"last_episode": last_episode
+		})
+	return seasons
 
 
 static func _program(
