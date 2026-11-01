@@ -1,6 +1,7 @@
 class_name LibraryProgramDetailController
 extends RefCounted
 
+const ProgramStatusScript = preload("res://scripts/ui/library_program_status.gd")
 const DYNAMIC_NODE_NAME: String = "LibraryProgramDetailDynamic"
 const INFO_WIDTHS: Array[float] = [230.0, 420.0]
 const HISTORY_WIDTHS: Array[float] = [110.0, 110.0, 240.0, 100.0, 220.0, 150.0]
@@ -56,7 +57,7 @@ static func _build_program_info(parent: VBoxContainer, program: Dictionary) -> v
 	_add_info_row(table, "Durée", "%d min" % int(program.get("duration_minutes", 0)))
 	_add_info_row(table, "Épisodes disponibles", _get_available_episode_text(program))
 	_add_info_row(table, "Saison(s)", _get_season_text(program))
-	_add_info_row(table, "État", _get_library_status(program))
+	_add_info_row(table, "État", ProgramStatusScript.get_text(program))
 
 
 static func _build_broadcast_history(parent: VBoxContainer, program: Dictionary) -> void:
@@ -122,13 +123,6 @@ static func _get_season_text(program: Dictionary) -> String:
 			return "%d saisons" % season_data.size()
 
 	return "Saison non renseignée"
-
-
-static func _get_library_status(program: Dictionary) -> String:
-	var status: String = String(program.get("status", "Disponible"))
-	if status == "Production en cours":
-		return "Disponible + production en cours"
-	return status
 
 
 static func _get_history_season(item: Dictionary) -> String:
