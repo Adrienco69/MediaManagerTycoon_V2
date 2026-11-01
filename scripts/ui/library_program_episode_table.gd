@@ -21,30 +21,22 @@ static func build(parent: VBoxContainer, program: Dictionary) -> void:
 	_add_cell(table, "Épisode", 0, true)
 	_add_cell(table, "Diffusion(s)", 1, true)
 
-	for episode_number: int in range(1, total_episodes + 1):
-		_add_cell(table, _get_episode_label(program, episode_number), 0, false)
-		_add_cell(table, _get_episode_broadcasts(program, episode_number), 1, false)
+	for global_episode_number: int in range(1, total_episodes + 1):
+		_add_cell(table, _get_episode_label(program, global_episode_number), 0, false)
+		_add_cell(table, _get_episode_broadcasts(program, global_episode_number), 1, false)
 
 
-static func _get_episode_label(program: Dictionary, episode_number: int) -> String:
-	var season_number: int = _find_season_number(program, episode_number)
-	if season_number > 0:
-		return "Saison %d | Épisode %d" % [season_number, episode_number]
-	return "Épisode %d" % episode_number
+static func _get_episode_label(program: Dictionary, global_episode_number: int) -> String:
+	var season_info: Dictionary = _find_season_info(program, global_episode_number)
+	if not season_info.is_empty():
+		return "Saison %d | Épisode %d" % [
+			int(season_info.get("season", 0)),
+			int(season_info.get("episode_in_season", 0))
+		]
+	return "Épisode %d" % global_episode_number
 
 
-static func _find_season_number(program: Dictionary, episode_number: int) -> int:
-	var history_value: Variant = program.get("broadcast_history", [])
-	if history_value is Array:
-		for item_value: Variant in history_value:
-			if not item_value is Dictionary:
-				continue
-			var item: Dictionary = item_value
-			if int(item.get("episode", 0)) == episode_number:
-				var season_number: int = int(item.get("season", 0))
-				if season_number > 0:
-					return season_number
-
+static func _find_season_info(program: Dictionary, global_episode_number: int) -> Dictionary:
 	var season_data_value: Variant = program.get("seasons", [])
 	if season_data_value is Array:
 		for season_value: Variant in season_data_value:
@@ -54,22 +46,55 @@ static func _find_season_number(program: Dictionary, episode_number: int) -> int
 			var season_number: int = int(season.get("number", 0))
 			var first_episode: int = int(season.get("first_episode", 0))
 			var last_episode: int = int(season.get("last_episode", 0))
-			if season_number > 0 and first_episode > 0 and last_episode >= first_episode:
-				if episode_number >= first_episode and episode_number <= last_episode:
-					return season_number
+			if season_number <= 0 or first_episode <= 0 or last_episode < first_episode:
+				continue
+			if global_episode_number >= first_episode and global_episode_number <= last_episode:
+				return {
+					"season": season_number,
+					"episode_in_season": (global_episode_number - first_episode) + 1
+				}
 
-	return 0
-
-
-static func _get_episode_broadcasts(program: Dictionary, episode_number: int) -> String:
-	var broadcasts: Array[String] = []
 	var history_value: Variant = program.get("broadcast_history", [])
 	if history_value is Array:
 		for item_value: Variant in history_value:
 			if not item_value is Dictionary:
 				continue
 			var item: Dictionary = item_value
-			if int(item.get("episode", 0)) != episode_number:
+			if int(item.get("episode_global", 0)) != global_episode_number:
+				continue
+			var season_number: int = int(item.get("season", 0))
+			var episode_in_season: int = int(item.get("episode", 0))
+			if season_number > 0 and episode_in_season > 0:
+				return {
+					"season": season_number,
+					"episode_in_season": episode_in_season
+				}
+
+	return {}
+
+
+static func _get_episode_broadcasts(program: Dictionary, global_episode_number: int) -> String:
+	var broadcasts: Array[String] = []
+	var season_info: Dictionary = _find_season_info(program, global_episode_number)
+	var expected_season: int = int(season_info.get("season", 0))
+	var expected_episode: int = int(season_info.get("episode_in_season", 0))
+	var history_value: Variant = program.get("broadcast_history", [])
+
+	if history_value is Array:
+		for item_value: Variant in history_value:
+			if not item_value is Dictionary:
+				continue
+			var item: Dictionary = item_value
+
+			var matches: bool = false
+			if int(item.get("episode_global", 0)) == global_episode_number:
+				matches = true
+			elif expected_season > 0 and expected_episode > 0:
+				matches = int(item.get("season", 0)) == expected_season and int(item.get("episode", 0)) == expected_episode
+			else:
+				matches = int(item.get("episode", 0)) == global_episode_number
+
+			if not matches:
 				continue
 
 			var date_text: String = String(item.get("date", "Date inconnue"))
