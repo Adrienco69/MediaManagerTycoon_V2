@@ -191,6 +191,52 @@ func remove_program_at(
 	return _remove_start_entry(channel_number, week_number, day_index, start_slot)
 
 
+func remove_automation(channel_number: int, automation_id: String) -> int:
+	if channel_number <= 0 or automation_id.is_empty():
+		return 0
+
+	var removed_count: int = 0
+	for key_value: Variant in _days.keys():
+		var key: String = String(key_value)
+		var parts: PackedStringArray = key.split(":")
+		if parts.size() < 3 or int(parts[0]) != channel_number:
+			continue
+
+		var day_value: Variant = _days.get(key, [])
+		if not day_value is Array:
+			continue
+		var day: Array = (day_value as Array).duplicate(true)
+		var starts_to_remove: Array[int] = []
+
+		for slot_index: int in range(mini(day.size(), SLOT_COUNT_PER_DAY)):
+			var entry_value: Variant = day[slot_index]
+			if not entry_value is Dictionary:
+				continue
+			var entry: Dictionary = entry_value as Dictionary
+			if String(entry.get("kind", "")) != "start":
+				continue
+			if String(entry.get("automation_id", "")) == automation_id:
+				starts_to_remove.append(slot_index)
+
+		for start_slot: int in starts_to_remove:
+			var start_entry: Dictionary = day[start_slot]
+			var slots_count: int = maxi(int(start_entry.get("slots_count", 1)), 1)
+			var end_slot: int = mini(start_slot + slots_count, SLOT_COUNT_PER_DAY)
+			for slot_index: int in range(start_slot, end_slot):
+				var entry_value: Variant = day[slot_index]
+				if not entry_value is Dictionary:
+					continue
+				var entry: Dictionary = entry_value as Dictionary
+				if int(entry.get("start_slot", start_slot)) == start_slot:
+					day[slot_index] = {}
+			removed_count += 1
+
+		if not starts_to_remove.is_empty():
+			_days[key] = day
+
+	return removed_count
+
+
 func move_program(
 	channel_number: int,
 	source_week: int,
@@ -224,7 +270,9 @@ func move_program(
 	var episode_data: Dictionary = {
 		"episode_global": int(start_entry.get("episode_global", 0)),
 		"season_number": int(start_entry.get("season_number", 0)),
-		"episode_number": int(start_entry.get("episode_number", 0))
+		"episode_number": int(start_entry.get("episode_number", 0)),
+		"automation_id": String(start_entry.get("automation_id", "")),
+		"automation_frequency": String(start_entry.get("automation_frequency", ""))
 	}
 
 	if not can_fit_program(channel_number, target_week, target_day, target_slot, program):
@@ -275,7 +323,9 @@ func move_program(
 		{
 			"episode_global": int(source_backup.get("episode_global", 0)),
 			"season_number": int(source_backup.get("season_number", 0)),
-			"episode_number": int(source_backup.get("episode_number", 0))
+			"episode_number": int(source_backup.get("episode_number", 0)),
+			"automation_id": String(source_backup.get("automation_id", "")),
+			"automation_frequency": String(source_backup.get("automation_frequency", ""))
 		}
 	)
 	return false
@@ -340,6 +390,8 @@ func _write_program(
 	var episode_global: int = int(episode_data.get("episode_global", 0))
 	var season_number: int = int(episode_data.get("season_number", 0))
 	var episode_number: int = int(episode_data.get("episode_number", 0))
+	var automation_id: String = String(episode_data.get("automation_id", ""))
+	var automation_frequency: String = String(episode_data.get("automation_frequency", ""))
 
 	day[start_slot] = {
 		"kind": "start",
@@ -350,7 +402,9 @@ func _write_program(
 		"slots_count": slots_needed,
 		"episode_global": episode_global,
 		"season_number": season_number,
-		"episode_number": episode_number
+		"episode_number": episode_number,
+		"automation_id": automation_id,
+		"automation_frequency": automation_frequency
 	}
 
 	for slot_index: int in range(start_slot + 1, start_slot + slots_needed):
@@ -362,7 +416,9 @@ func _write_program(
 			"start_slot": start_slot,
 			"episode_global": episode_global,
 			"season_number": season_number,
-			"episode_number": episode_number
+			"episode_number": episode_number,
+			"automation_id": automation_id,
+			"automation_frequency": automation_frequency
 		}
 
 	_days[key] = day
