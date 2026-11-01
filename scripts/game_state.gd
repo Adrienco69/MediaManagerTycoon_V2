@@ -3,6 +3,7 @@ extends Node
 const PlayerChannelManagerScript = preload("res://scripts/core/player_channel_manager.gd")
 const MMTNRegistryScript = preload("res://scripts/core/mmtn_registry.gd")
 const ProductionManagerScript = preload("res://scripts/core/production_manager.gd")
+const ProductionRulesScript = preload("res://scripts/core/production_rules.gd")
 
 signal time_changed
 signal credits_changed(new_value: int)
@@ -10,6 +11,7 @@ signal speed_changed(new_mode: int)
 signal identity_changed(player_name: String, company_name: String)
 signal channel_created(channel: Dictionary)
 signal programs_changed
+signal productions_changed
 
 enum TimeMode {
 	PAUSED,
@@ -119,6 +121,7 @@ func get_save_data() -> Dictionary:
 		"player_channels": _player_channel_manager.get_channels(),
 		"mmtn_history": _mmtn_registry.get_channels(),
 		"programs": _production_manager.get_programs(),
+		"active_productions": _production_manager.get_active_productions(),
 		"launch_series_telefilm_distribution": _production_manager.get_launch_series_telefilm_distribution()
 	}
 
@@ -158,9 +161,11 @@ func load_save_data(data: Dictionary) -> bool:
 
 	var programs_value: Variant = data.get("programs", [])
 	var programs: Array = programs_value if programs_value is Array else []
+	var active_value: Variant = data.get("active_productions", [])
+	var active_productions: Array = active_value if active_value is Array else []
 	var distribution_value: Variant = data.get("launch_series_telefilm_distribution", {})
 	var distribution: Dictionary = distribution_value if distribution_value is Dictionary else {}
-	_production_manager.load_data(programs, distribution)
+	_production_manager.load_data(programs, distribution, active_productions)
 
 	_emit_full_state_refresh()
 	return true
@@ -172,6 +177,7 @@ func _emit_full_state_refresh() -> void:
 	time_changed.emit()
 	speed_changed.emit(time_mode)
 	programs_changed.emit()
+	productions_changed.emit()
 
 
 func has_started_game() -> bool:
@@ -200,6 +206,21 @@ func get_group_programs() -> Array[Dictionary]:
 
 func get_active_productions() -> Array[Dictionary]:
 	return _production_manager.get_active_productions()
+
+
+func create_production(spec: Dictionary) -> String:
+	var format_name: String = String(spec.get("format", ""))
+	var cost: int = ProductionRulesScript.get_cost(format_name)
+	if credits < cost:
+		return "Crédits insuffisants : cette production coûte %d CC." % cost
+
+	var error_text: String = _production_manager.start_new_production(spec)
+	if not error_text.is_empty():
+		return error_text
+
+	spend_credits(cost)
+	productions_changed.emit()
+	return ""
 
 
 func get_program(program_id: String) -> Dictionary:
@@ -267,6 +288,14 @@ func spend_credits(amount: int) -> bool:
 func advance_minutes(amount: int) -> void:
 	if amount <= 0:
 		return
+
+	var active_before: int = _production_manager.get_active_productions().size()
+	var production_visible_change: bool = _production_manager.advance_minutes(amount)
+	var active_after: int = _production_manager.get_active_productions().size()
+	if production_visible_change:
+		productions_changed.emit()
+	if active_after < active_before:
+		programs_changed.emit()
 
 	var total_minutes: int = minute + amount
 	minute = total_minutes % 60
