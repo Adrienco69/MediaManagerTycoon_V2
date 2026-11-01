@@ -83,6 +83,7 @@ static func render(
 
 	var refresh_form: Callable = func() -> void:
 		_refresh_duration_options(format_select, duration_select, episodes_input)
+		_refresh_season_label(format_select, season_label)
 		_refresh_summary(format_select, duration_select, episodes_input, cost_label, time_label)
 
 	format_select.item_selected.connect(func(_index: int) -> void:
@@ -157,6 +158,11 @@ static func _refresh_duration_options(
 		episodes_input.text = "7"
 
 
+static func _refresh_season_label(format_select: OptionButton, season_label: Label) -> void:
+	var format_name: String = format_select.get_item_text(format_select.selected)
+	season_label.text = "—" if ProductionRulesScript.is_single_unit(format_name) else "Saison 1"
+
+
 static func _refresh_summary(
 	format_select: OptionButton,
 	duration_select: OptionButton,
@@ -186,7 +192,7 @@ static func _build_spec(
 		"format": format_name,
 		"duration_minutes": _get_selected_duration(duration_select),
 		"episodes_total": 1 if ProductionRulesScript.is_single_unit(format_name) else int(episodes_input.text),
-		"season_number": 1
+		"season_number": 0 if ProductionRulesScript.is_single_unit(format_name) else 1
 	}
 
 
