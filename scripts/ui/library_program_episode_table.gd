@@ -1,7 +1,7 @@
 class_name LibraryProgramEpisodeTable
 extends RefCounted
 
-const COLUMN_WIDTHS: Array[float] = [360.0, 620.0]
+const COLUMN_WIDTHS: Array[float] = [150.0, 160.0, 170.0, 520.0]
 
 
 static func build(parent: VBoxContainer, program: Dictionary) -> void:
@@ -13,33 +13,34 @@ static func build(parent: VBoxContainer, program: Dictionary) -> void:
 		return
 
 	var table: GridContainer = GridContainer.new()
-	table.columns = 2
+	table.columns = 4
 	table.add_theme_constant_override("h_separation", 0)
 	table.add_theme_constant_override("v_separation", 0)
 	parent.add_child(table)
 
-	_add_cell(table, "Épisode", 0, true)
-	_add_cell(table, "Diffusion(s)", 1, true)
+	_add_cell(table, "Saison", 0, true)
+	_add_cell(table, "Épisode", 1, true)
+	_add_cell(table, "Épisode total", 2, true)
+	_add_cell(table, "Diffusion(s)", 3, true)
 
 	for global_episode_number: int in range(1, total_episodes + 1):
-		_add_cell(table, _get_episode_label(program, global_episode_number, total_episodes), 0, false)
-		_add_cell(table, _get_episode_broadcasts(program, global_episode_number), 1, false)
+		var season_info: Dictionary = _find_season_info(program, global_episode_number)
+		_add_cell(table, _get_season_text(season_info), 0, false)
+		_add_cell(table, _get_episode_text(season_info, global_episode_number), 1, false)
+		_add_cell(table, "%d/%d" % [global_episode_number, total_episodes], 2, false)
+		_add_cell(table, _get_episode_broadcasts(program, global_episode_number), 3, false)
 
 
-static func _get_episode_label(
-	program: Dictionary,
-	global_episode_number: int,
-	total_episodes: int
-) -> String:
-	var season_info: Dictionary = _find_season_info(program, global_episode_number)
-	if not season_info.is_empty():
-		return "Saison %d | Épisode %d | Épisode %d/%d" % [
-			int(season_info.get("season", 0)),
-			int(season_info.get("episode_in_season", 0)),
-			global_episode_number,
-			total_episodes
-		]
-	return "Épisode %d/%d" % [global_episode_number, total_episodes]
+static func _get_season_text(season_info: Dictionary) -> String:
+	if season_info.is_empty():
+		return "—"
+	return "Saison %d" % int(season_info.get("season", 0))
+
+
+static func _get_episode_text(season_info: Dictionary, global_episode_number: int) -> String:
+	if season_info.is_empty():
+		return "Épisode %d" % global_episode_number
+	return "Épisode %d" % int(season_info.get("episode_in_season", 0))
 
 
 static func _find_season_info(program: Dictionary, global_episode_number: int) -> Dictionary:
