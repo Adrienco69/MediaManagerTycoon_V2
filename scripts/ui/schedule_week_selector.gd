@@ -12,7 +12,7 @@ static func build(on_week_changed: Callable) -> HBoxContainer:
 	row.add_theme_constant_override("separation", 8)
 
 	var label: Label = Label.new()
-	label.text = "Semaine"
+	label.text = "Semaine :"
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(label)
 
