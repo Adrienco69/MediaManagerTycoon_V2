@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Texture2D" path="res://assets/images/logo_media_manager_tycoon.png" id="2_logo"]
 
 [sub_resource type="Gradient" id="Gradient_start_months"]
 offsets = PackedFloat32Array(0, 0.166667, 0.333333, 0.5, 0.666667, 0.833333, 1)
@@ -71,7 +72,16 @@ theme_override_constants/margin_bottom = 10
 layout_mode = 2
 theme_override_constants/separation = 18
 
+[node name="GameLogo" type="TextureRect" parent="GameUI/RootVBox/TopBar/TopMargin/TopHBox"]
+custom_minimum_size = Vector2(120, 98)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("2_logo")
+expand_mode = 1
+stretch_mode = 5
+
 [node name="GameTitle" type="Label" parent="GameUI/RootVBox/TopBar/TopMargin/TopHBox"]
+visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "MEDIA MANAGER TYCOON V2"
@@ -275,8 +285,17 @@ theme_override_constants/margin_bottom = 36
 layout_mode = 2
 theme_override_constants/separation = 16
 
+[node name="HomeLogo" type="TextureRect" parent="StartScreen/Center/HomePanel/Margin/VBox"]
+custom_minimum_size = Vector2(320, 260)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("2_logo")
+expand_mode = 1
+stretch_mode = 5
+
 [node name="HomeTitle" type="Label" parent="StartScreen/Center/HomePanel/Margin/VBox"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "MEDIA MANAGER TYCOON V2"
