@@ -8,16 +8,29 @@ const TELEFILMS: Array[String] = [
 ]
 
 
-static func build(channel_name: String) -> Array[Dictionary]:
+static func build(channel_name: String, player_series_telefilm: Dictionary) -> Array[Dictionary]:
 	var programs: Array[Dictionary] = []
 
 	programs.append(_program("Notre monde en crises", "Shortcom", 30, 25, 25))
 	programs.append(_program("Le futur pour un passée", "Shortcom", 30, 50, 50))
-	programs.append(_program("La vie du lycée", "Série", 30, 21, 6, "Production en cours", 7))
-	programs.append(_program("Une famille presque parfaite", "Série", 60, 21, 6, "Production en cours", 7))
-	programs.append(_program("Un ange s’en charge", "Série-téléfilm", 90, 126, 126))
-	programs.append(_program("Un paradis au camping", "Série-téléfilm", 90, 94, 94))
-	programs.append(_program("Une école, une histoire", "Série-téléfilm", 90, 48, 48))
+
+	# Les épisodes 1 à 6 sont disponibles, mais aucun épisode suivant n'est
+	# automatiquement lancé en production au début de la partie.
+	programs.append(_program("La vie du lycée", "Série", 30, 21, 6))
+	programs.append(_program("Une famille presque parfaite", "Série", 60, 21, 6))
+
+	if not player_series_telefilm.is_empty():
+		var series_telefilm_name: String = String(player_series_telefilm.get("name", ""))
+		var series_telefilm_episodes: int = int(player_series_telefilm.get("episodes", 0))
+		if not series_telefilm_name.is_empty() and series_telefilm_episodes > 0:
+			programs.append(_program(
+				series_telefilm_name,
+				"Série-téléfilm",
+				90,
+				series_telefilm_episodes,
+				series_telefilm_episodes
+			))
+
 	programs.append(_program("Combien j’ai de CC", "Jeux TV", 30, 15, 15))
 	programs.append(_program("Le bon prix", "Jeux TV", 90, 5, 5))
 	programs.append(_program("Tout le monde avec…", "Documentaire", 120, 5, 5))
