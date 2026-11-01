@@ -53,6 +53,9 @@ static func _program(
 		"episodes_available": episodes_available,
 		"status": status,
 		"current_episode": current_episode,
+		"season_count": 0,
+		"seasons": [],
+		"broadcast_history": [],
 		"source": "launch",
 		"owned_by_group": true
 	}
