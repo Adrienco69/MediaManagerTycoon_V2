@@ -54,7 +54,7 @@ static func _build_simple_table(
 	_add_cell(table, "Diffusion(s)", 2, true, SIMPLE_COLUMN_WIDTHS)
 
 	for global_episode_number: int in range(1, total_episodes + 1):
-		_add_cell(table, "—", 0, false, SIMPLE_COLUMN_WIDTHS)
+		_add_cell(table, "1", 0, false, SIMPLE_COLUMN_WIDTHS)
 		_add_cell(
 			table,
 			"Épisode %d/%d" % [global_episode_number, total_episodes],
@@ -91,7 +91,7 @@ static func _has_season_breakdown(program: Dictionary) -> bool:
 
 static func _get_season_text(season_info: Dictionary) -> String:
 	if season_info.is_empty():
-		return "—"
+		return "1"
 	return "Saison %d" % int(season_info.get("season", 0))
 
 
