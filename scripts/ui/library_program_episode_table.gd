@@ -1,7 +1,7 @@
 class_name LibraryProgramEpisodeTable
 extends RefCounted
 
-const COLUMN_WIDTHS: Array[float] = [260.0, 620.0]
+const COLUMN_WIDTHS: Array[float] = [360.0, 620.0]
 
 
 static func build(parent: VBoxContainer, program: Dictionary) -> void:
@@ -22,18 +22,24 @@ static func build(parent: VBoxContainer, program: Dictionary) -> void:
 	_add_cell(table, "Diffusion(s)", 1, true)
 
 	for global_episode_number: int in range(1, total_episodes + 1):
-		_add_cell(table, _get_episode_label(program, global_episode_number), 0, false)
+		_add_cell(table, _get_episode_label(program, global_episode_number, total_episodes), 0, false)
 		_add_cell(table, _get_episode_broadcasts(program, global_episode_number), 1, false)
 
 
-static func _get_episode_label(program: Dictionary, global_episode_number: int) -> String:
+static func _get_episode_label(
+	program: Dictionary,
+	global_episode_number: int,
+	total_episodes: int
+) -> String:
 	var season_info: Dictionary = _find_season_info(program, global_episode_number)
 	if not season_info.is_empty():
-		return "Saison %d | Épisode %d" % [
+		return "Saison %d | Épisode %d | Épisode %d/%d" % [
 			int(season_info.get("season", 0)),
-			int(season_info.get("episode_in_season", 0))
+			int(season_info.get("episode_in_season", 0)),
+			global_episode_number,
+			total_episodes
 		]
-	return "Épisode %d" % global_episode_number
+	return "Épisode %d/%d" % [global_episode_number, total_episodes]
 
 
 static func _find_season_info(program: Dictionary, global_episode_number: int) -> Dictionary:
