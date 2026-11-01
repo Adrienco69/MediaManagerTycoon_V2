@@ -61,210 +61,75 @@ static func open(
 	popup.add_child(margin)
 
 	var content: VBoxContainer = VBoxContainer.new()
-	content.custom_minimum_size = Vector2(700, 0)
+	content.custom_minimum_size = Vector2(720, 0)
 	content.add_theme_constant_override("separation", 10)
 	margin.add_child(content)
 
 	var title: Label = Label.new()
-	title.text = "Choisir l'épisode | %s" % String(program.get("name", "Programme"))
+	title.text = "Programmer | %s" % String(program.get("name", "Programme"))
 	title.add_theme_font_size_override("font_size", 22)
 	content.add_child(title)
 
-	var hint: Label = Label.new()
-	hint.text = "Choisissez un épisode à diffuser ici, ou automatisez la suite sans placer chaque épisode à la main."
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_child(hint)
+	var mode_row: HBoxContainer = HBoxContainer.new()
+	mode_row.add_theme_constant_override("separation", 8)
+	content.add_child(mode_row)
 
-	var automation_panel: PanelContainer = PanelContainer.new()
-	content.add_child(automation_panel)
+	var manual_button: Button = Button.new()
+	manual_button.text = "Manuel"
+	manual_button.toggle_mode = true
+	manual_button.button_pressed = true
+	manual_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	manual_button.custom_minimum_size = Vector2(0, 42)
+	mode_row.add_child(manual_button)
 
-	var automation_box: VBoxContainer = VBoxContainer.new()
-	automation_box.add_theme_constant_override("separation", 6)
-	automation_panel.add_child(automation_box)
-
-	var automation_title: Label = Label.new()
-	automation_title.text = "Automatisation"
-	automation_title.add_theme_font_size_override("font_size", 18)
-	automation_box.add_child(automation_title)
-
-	var frequency_row: HBoxContainer = HBoxContainer.new()
-	frequency_row.add_theme_constant_override("separation", 8)
-	automation_box.add_child(frequency_row)
-
-	var frequency_label: Label = Label.new()
-	frequency_label.text = "Fréquence :"
-	frequency_label.custom_minimum_size = Vector2(170, 0)
-	frequency_row.add_child(frequency_label)
-
-	var frequency_selector: OptionButton = OptionButton.new()
-	frequency_selector.add_item("Hebdomadaire", FREQUENCY_WEEKLY)
-	frequency_selector.add_item("Quotidienne", FREQUENCY_DAILY)
-	frequency_selector.select(0)
-	frequency_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	frequency_row.add_child(frequency_selector)
-
-	var days_row: HBoxContainer = HBoxContainer.new()
-	days_row.add_theme_constant_override("separation", 6)
-	automation_box.add_child(days_row)
-
-	var days_label: Label = Label.new()
-	days_label.text = "Jours de diffusion :"
-	days_label.custom_minimum_size = Vector2(170, 0)
-	days_row.add_child(days_label)
-
-	var day_checks: Array[CheckButton] = []
-	for index: int in range(DAY_NAMES.size()):
-		var day_check: CheckButton = CheckButton.new()
-		day_check.text = DAY_NAMES[index].substr(0, 3)
-		day_check.button_pressed = index == day_index
-		day_check.tooltip_text = DAY_NAMES[index]
-		days_row.add_child(day_check)
-		day_checks.append(day_check)
-
-	var presets_row: HBoxContainer = HBoxContainer.new()
-	presets_row.add_theme_constant_override("separation", 6)
-	automation_box.add_child(presets_row)
-
-	var presets_spacer: Control = Control.new()
-	presets_spacer.custom_minimum_size = Vector2(170, 0)
-	presets_row.add_child(presets_spacer)
-
-	var weekdays_button: Button = Button.new()
-	weekdays_button.text = "Lun–Ven"
-	presets_row.add_child(weekdays_button)
-	weekdays_button.pressed.connect(func() -> void:
-		_set_selected_days(day_checks, [0, 1, 2, 3, 4])
-	)
-
-	var everyday_button: Button = Button.new()
-	everyday_button.text = "Tous les jours"
-	presets_row.add_child(everyday_button)
-	everyday_button.pressed.connect(func() -> void:
-		_set_selected_days(day_checks, [0, 1, 2, 3, 4, 5, 6])
-	)
-
-	var weekend_button: Button = Button.new()
-	weekend_button.text = "Week-end"
-	presets_row.add_child(weekend_button)
-	weekend_button.pressed.connect(func() -> void:
-		_set_selected_days(day_checks, [5, 6])
-	)
-
-	var episodes_per_row: HBoxContainer = HBoxContainer.new()
-	episodes_per_row.add_theme_constant_override("separation", 8)
-	automation_box.add_child(episodes_per_row)
-
-	var episodes_per_label: Label = Label.new()
-	episodes_per_label.text = "Épisodes par soirée :"
-	episodes_per_label.custom_minimum_size = Vector2(170, 0)
-	episodes_per_row.add_child(episodes_per_label)
-
-	var episodes_per_spinner: SpinBox = SpinBox.new()
-	episodes_per_spinner.min_value = 1
-	episodes_per_spinner.max_value = episode_count
-	episodes_per_spinner.step = 1
-	episodes_per_spinner.value = 1
-	episodes_per_spinner.allow_greater = false
-	episodes_per_spinner.allow_lesser = false
-	episodes_per_spinner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	episodes_per_row.add_child(episodes_per_spinner)
-
-	var period_row: HBoxContainer = HBoxContainer.new()
-	period_row.add_theme_constant_override("separation", 8)
-	automation_box.add_child(period_row)
-
-	var period_label: Label = Label.new()
-	period_label.text = "Nombre de semaines :"
-	period_label.custom_minimum_size = Vector2(170, 0)
-	period_row.add_child(period_label)
-
-	var period_spinner: SpinBox = SpinBox.new()
-	period_spinner.min_value = 1
-	period_spinner.max_value = maxi(53 - week_number, 1)
-	period_spinner.step = 1
-	period_spinner.value = 1
-	period_spinner.allow_greater = false
-	period_spinner.allow_lesser = false
-	period_spinner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	period_row.add_child(period_spinner)
-
-	var automation_hint: Label = Label.new()
-	automation_hint.text = "Hebdomadaire : choisissez les jours, le nombre d'épisodes à la suite chaque soirée et le nombre de semaines."
-	automation_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	automation_box.add_child(automation_hint)
-
-	frequency_selector.item_selected.connect(func(_index: int) -> void:
-		var frequency_id: int = frequency_selector.get_selected_id()
-		var weekly_mode: bool = frequency_id == FREQUENCY_WEEKLY
-		days_label.visible = weekly_mode
-		for day_check: CheckButton in day_checks:
-			day_check.visible = weekly_mode
-		weekdays_button.visible = weekly_mode
-		everyday_button.visible = weekly_mode
-		weekend_button.visible = weekly_mode
-		presets_spacer.visible = weekly_mode
-		if frequency_id == FREQUENCY_DAILY:
-			episodes_per_label.text = "Épisodes par jour :"
-			period_label.text = "Nombre de jours :"
-			var start_absolute_day: int = ((week_number - 1) * 7) + day_index
-			period_spinner.max_value = maxi(DAYS_PER_YEAR - start_absolute_day, 1)
-			automation_hint.text = "Quotidienne : choisissez le nombre d'épisodes diffusés à la suite chaque jour et le nombre de jours."
-		else:
-			episodes_per_label.text = "Épisodes par soirée :"
-			period_label.text = "Nombre de semaines :"
-			period_spinner.max_value = maxi(53 - week_number, 1)
-			automation_hint.text = "Hebdomadaire : choisissez les jours, le nombre d'épisodes à la suite chaque soirée et le nombre de semaines."
-		if period_spinner.value > period_spinner.max_value:
-			period_spinner.value = period_spinner.max_value
-	)
-
-	var separator: HSeparator = HSeparator.new()
-	content.add_child(separator)
-
-	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, 320)
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(scroll)
-
-	var episode_list: VBoxContainer = VBoxContainer.new()
-	episode_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	episode_list.add_theme_constant_override("separation", 6)
-	scroll.add_child(episode_list)
+	var automation_button: Button = Button.new()
+	automation_button.text = "Automatisation"
+	automation_button.toggle_mode = true
+	automation_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	automation_button.custom_minimum_size = Vector2(0, 42)
+	mode_row.add_child(automation_button)
 
 	var editing_existing: bool = (
 		_is_existing_start(channel, week_number, day_index, slot_index)
 		and not replace_existing
 	)
+	if editing_existing:
+		automation_button.disabled = true
+		automation_button.tooltip_text = "Une diffusion déjà programmée se modifie en mode manuel."
+
+	var manual_container: VBoxContainer = VBoxContainer.new()
+	manual_container.add_theme_constant_override("separation", 8)
+	content.add_child(manual_container)
+
+	var manual_hint: Label = Label.new()
+	manual_hint.text = "Choisissez l'épisode à diffuser sur ce créneau."
+	manual_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	manual_container.add_child(manual_hint)
+
+	var manual_scroll: ScrollContainer = ScrollContainer.new()
+	manual_scroll.custom_minimum_size = Vector2(0, 430)
+	manual_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	manual_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	manual_container.add_child(manual_scroll)
+
+	var episode_list: VBoxContainer = VBoxContainer.new()
+	episode_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	episode_list.add_theme_constant_override("separation", 6)
+	manual_scroll.add_child(episode_list)
+
 	for global_episode: int in range(1, episode_count + 1):
 		var episode_data: Dictionary = ScheduleEpisodeHelperScript.get_episode_data(program, global_episode)
 		if episode_data.is_empty():
 			continue
-
-		var episode_row: HBoxContainer = HBoxContainer.new()
-		episode_row.add_theme_constant_override("separation", 6)
-		episode_list.add_child(episode_row)
 
 		var episode_button: Button = Button.new()
 		episode_button.text = String(episode_data.get("label", "Épisode %d" % global_episode))
 		episode_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		episode_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		episode_button.custom_minimum_size = Vector2(0, 40)
-		episode_row.add_child(episode_button)
-
-		var auto_button: Button = Button.new()
-		auto_button.text = "Automatiser depuis ici"
-		auto_button.custom_minimum_size = Vector2(190, 40)
-		auto_button.disabled = editing_existing
-		auto_button.tooltip_text = (
-			"Ce créneau sert actuellement à modifier l'épisode déjà programmé."
-			if editing_existing
-			else "Programme automatiquement les épisodes suivants."
-		)
-		episode_row.add_child(auto_button)
+		episode_list.add_child(episode_button)
 
 		var captured_episode: Dictionary = episode_data.duplicate(true)
-		var captured_global_episode: int = global_episode
 		episode_button.pressed.connect(func() -> void:
 			var saved: bool = false
 			if editing_existing:
@@ -300,32 +165,223 @@ static func open(
 				refresh_callback.call()
 		)
 
-		auto_button.pressed.connect(func() -> void:
-			var frequency_id: int = frequency_selector.get_selected_id()
-			var episodes_per_period: int = int(episodes_per_spinner.value)
-			var period_count: int = int(period_spinner.value)
-			var selected_days: Array[int] = _get_selected_days(day_checks)
-			if frequency_id == FREQUENCY_WEEKLY and selected_days.is_empty():
-				_show_selection_error(anchor)
-				return
-			var result: Dictionary = _auto_schedule_episodes(
-				channel,
-				week_number,
-				day_index,
-				slot_index,
-				program,
-				captured_global_episode,
-				episodes_per_period,
-				period_count,
-				frequency_id,
-				selected_days,
-				replace_existing
-			)
-			if refresh_callback.is_valid():
-				refresh_callback.call()
-			_show_automation_result(anchor, result)
-			popup.hide()
+	var automation_container: VBoxContainer = VBoxContainer.new()
+	automation_container.visible = false
+	automation_container.add_theme_constant_override("separation", 8)
+	content.add_child(automation_container)
+
+	var automation_panel: PanelContainer = PanelContainer.new()
+	automation_container.add_child(automation_panel)
+
+	var automation_box: VBoxContainer = VBoxContainer.new()
+	automation_box.add_theme_constant_override("separation", 6)
+	automation_panel.add_child(automation_box)
+
+	var automation_title: Label = Label.new()
+	automation_title.text = "Automatisation"
+	automation_title.add_theme_font_size_override("font_size", 18)
+	automation_box.add_child(automation_title)
+
+	var frequency_row: HBoxContainer = HBoxContainer.new()
+	frequency_row.add_theme_constant_override("separation", 8)
+	automation_box.add_child(frequency_row)
+
+	var frequency_label: Label = Label.new()
+	frequency_label.text = "Fréquence :"
+	frequency_label.custom_minimum_size = Vector2(180, 0)
+	frequency_row.add_child(frequency_label)
+
+	var frequency_selector: OptionButton = OptionButton.new()
+	frequency_selector.add_item("Hebdomadaire", FREQUENCY_WEEKLY)
+	frequency_selector.add_item("Quotidienne", FREQUENCY_DAILY)
+	frequency_selector.select(0)
+	frequency_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	frequency_row.add_child(frequency_selector)
+
+	var days_row: HBoxContainer = HBoxContainer.new()
+	days_row.add_theme_constant_override("separation", 6)
+	automation_box.add_child(days_row)
+
+	var days_label: Label = Label.new()
+	days_label.text = "Jours de diffusion :"
+	days_label.custom_minimum_size = Vector2(180, 0)
+	days_row.add_child(days_label)
+
+	var day_checks: Array[CheckButton] = []
+	for index: int in range(DAY_NAMES.size()):
+		var day_check: CheckButton = CheckButton.new()
+		day_check.text = DAY_NAMES[index].substr(0, 3)
+		day_check.button_pressed = index == day_index
+		day_check.tooltip_text = DAY_NAMES[index]
+		days_row.add_child(day_check)
+		day_checks.append(day_check)
+
+	var presets_row: HBoxContainer = HBoxContainer.new()
+	presets_row.add_theme_constant_override("separation", 6)
+	automation_box.add_child(presets_row)
+
+	var presets_spacer: Control = Control.new()
+	presets_spacer.custom_minimum_size = Vector2(180, 0)
+	presets_row.add_child(presets_spacer)
+
+	var weekdays_button: Button = Button.new()
+	weekdays_button.text = "Lun–Ven"
+	presets_row.add_child(weekdays_button)
+	weekdays_button.pressed.connect(func() -> void:
+		_set_selected_days(day_checks, [0, 1, 2, 3, 4])
+	)
+
+	var everyday_button: Button = Button.new()
+	everyday_button.text = "Tous les jours"
+	presets_row.add_child(everyday_button)
+	everyday_button.pressed.connect(func() -> void:
+		_set_selected_days(day_checks, [0, 1, 2, 3, 4, 5, 6])
+	)
+
+	var weekend_button: Button = Button.new()
+	weekend_button.text = "Week-end"
+	presets_row.add_child(weekend_button)
+	weekend_button.pressed.connect(func() -> void:
+		_set_selected_days(day_checks, [5, 6])
+	)
+
+	var episodes_per_row: HBoxContainer = HBoxContainer.new()
+	episodes_per_row.add_theme_constant_override("separation", 8)
+	automation_box.add_child(episodes_per_row)
+
+	var episodes_per_label: Label = Label.new()
+	episodes_per_label.text = "Épisodes par soirée :"
+	episodes_per_label.custom_minimum_size = Vector2(180, 0)
+	episodes_per_row.add_child(episodes_per_label)
+
+	var episodes_per_spinner: SpinBox = SpinBox.new()
+	episodes_per_spinner.min_value = 1
+	episodes_per_spinner.max_value = episode_count
+	episodes_per_spinner.step = 1
+	episodes_per_spinner.value = 1
+	episodes_per_spinner.allow_greater = false
+	episodes_per_spinner.allow_lesser = false
+	episodes_per_spinner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	episodes_per_row.add_child(episodes_per_spinner)
+
+	var period_row: HBoxContainer = HBoxContainer.new()
+	period_row.add_theme_constant_override("separation", 8)
+	automation_box.add_child(period_row)
+
+	var period_label: Label = Label.new()
+	period_label.text = "Nombre de semaines :"
+	period_label.custom_minimum_size = Vector2(180, 0)
+	period_row.add_child(period_label)
+
+	var period_spinner: SpinBox = SpinBox.new()
+	period_spinner.min_value = 1
+	period_spinner.max_value = maxi(53 - week_number, 1)
+	period_spinner.step = 1
+	period_spinner.value = 1
+	period_spinner.allow_greater = false
+	period_spinner.allow_lesser = false
+	period_spinner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	period_row.add_child(period_spinner)
+
+	var start_episode_row: HBoxContainer = HBoxContainer.new()
+	start_episode_row.add_theme_constant_override("separation", 8)
+	automation_box.add_child(start_episode_row)
+
+	var start_episode_label: Label = Label.new()
+	start_episode_label.text = "Commencer à l'épisode :"
+	start_episode_label.custom_minimum_size = Vector2(180, 0)
+	start_episode_row.add_child(start_episode_label)
+
+	var start_episode_selector: OptionButton = OptionButton.new()
+	start_episode_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for global_episode: int in range(1, episode_count + 1):
+		var episode_data: Dictionary = ScheduleEpisodeHelperScript.get_episode_data(program, global_episode)
+		if episode_data.is_empty():
+			continue
+		start_episode_selector.add_item(
+			String(episode_data.get("label", "Épisode %d" % global_episode)),
+			global_episode
 		)
+	if start_episode_selector.item_count > 0:
+		start_episode_selector.select(0)
+	start_episode_row.add_child(start_episode_selector)
+
+	var automation_hint: Label = Label.new()
+	automation_hint.text = "Hebdomadaire : choisissez les jours, le nombre d'épisodes à la suite chaque soirée, la durée de programmation et l'épisode de départ."
+	automation_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	automation_box.add_child(automation_hint)
+
+	var launch_automation_button: Button = Button.new()
+	launch_automation_button.text = "Lancer l'automatisation"
+	launch_automation_button.custom_minimum_size = Vector2(0, 42)
+	launch_automation_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	automation_box.add_child(launch_automation_button)
+
+	frequency_selector.item_selected.connect(func(_index: int) -> void:
+		var frequency_id: int = frequency_selector.get_selected_id()
+		var weekly_mode: bool = frequency_id == FREQUENCY_WEEKLY
+		days_row.visible = weekly_mode
+		presets_row.visible = weekly_mode
+		if frequency_id == FREQUENCY_DAILY:
+			episodes_per_label.text = "Épisodes par jour :"
+			period_label.text = "Nombre de jours :"
+			var start_absolute_day: int = ((week_number - 1) * 7) + day_index
+			period_spinner.max_value = maxi(DAYS_PER_YEAR - start_absolute_day, 1)
+			automation_hint.text = "Quotidienne : choisissez le nombre d'épisodes à la suite chaque jour, le nombre de jours et l'épisode de départ."
+		else:
+			episodes_per_label.text = "Épisodes par soirée :"
+			period_label.text = "Nombre de semaines :"
+			period_spinner.max_value = maxi(53 - week_number, 1)
+			automation_hint.text = "Hebdomadaire : choisissez les jours, le nombre d'épisodes à la suite chaque soirée, le nombre de semaines et l'épisode de départ."
+		if period_spinner.value > period_spinner.max_value:
+			period_spinner.value = period_spinner.max_value
+	)
+
+	launch_automation_button.pressed.connect(func() -> void:
+		var frequency_id: int = frequency_selector.get_selected_id()
+		var episodes_per_period: int = int(episodes_per_spinner.value)
+		var period_count: int = int(period_spinner.value)
+		var selected_days: Array[int] = _get_selected_days(day_checks)
+		if frequency_id == FREQUENCY_WEEKLY and selected_days.is_empty():
+			_show_selection_error(anchor)
+			return
+		if start_episode_selector.item_count <= 0:
+			return
+		var start_global_episode: int = start_episode_selector.get_selected_id()
+		var result: Dictionary = _auto_schedule_episodes(
+			channel,
+			week_number,
+			day_index,
+			slot_index,
+			program,
+			start_global_episode,
+			episodes_per_period,
+			period_count,
+			frequency_id,
+			selected_days,
+			replace_existing
+		)
+		if refresh_callback.is_valid():
+			refresh_callback.call()
+		_show_automation_result(anchor, result)
+		popup.hide()
+	)
+
+	manual_button.pressed.connect(func() -> void:
+		manual_button.button_pressed = true
+		automation_button.button_pressed = false
+		manual_container.visible = true
+		automation_container.visible = false
+	)
+
+	automation_button.pressed.connect(func() -> void:
+		if automation_button.disabled:
+			return
+		automation_button.button_pressed = true
+		manual_button.button_pressed = false
+		manual_container.visible = false
+		automation_container.visible = true
+	)
 
 	var cancel_button: Button = Button.new()
 	cancel_button.text = "Annuler"
@@ -337,7 +393,7 @@ static func open(
 		if is_instance_valid(popup):
 			popup.queue_free()
 	)
-	popup.popup_centered(Vector2i(780, 780))
+	popup.popup_centered(Vector2i(800, 760))
 
 
 static func _auto_schedule_episodes(
