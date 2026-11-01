@@ -9,6 +9,7 @@ const TVGridPageControllerScript = preload("res://scripts/ui/tv_grid_page_contro
 const ZapPageControllerScript = preload("res://scripts/ui/zap_page_controller.gd")
 const ProductionPageControllerScript = preload("res://scripts/ui/production_page_controller.gd")
 const LibraryPageControllerScript = preload("res://scripts/ui/library_page_controller.gd")
+const LibraryProgramDetailControllerScript = preload("res://scripts/ui/library_program_detail_controller.gd")
 const MainContentScrollScript = preload("res://scripts/ui/main_content_scroll.gd")
 
 @onready var background: ColorRect = $Background
@@ -318,7 +319,27 @@ func _show_library() -> void:
 	LibraryPageControllerScript.render(
 		content_container,
 		page_description,
-		GameState.get_group_programs()
+		GameState.get_group_programs(),
+		_show_library_program
+	)
+
+
+func _show_library_program(program: Dictionary) -> void:
+	_clear_dynamic_pages()
+	_scroll_main_to_top()
+	NavigationButtonStateScript.apply(_get_navigation_buttons(), library_button)
+
+	var program_id: String = String(program.get("id", ""))
+	var current_program: Dictionary = GameState.get_program(program_id)
+	if current_program.is_empty():
+		current_program = program
+
+	page_title.text = "Bibliothèque | %s" % String(current_program.get("name", "Programme"))
+	LibraryProgramDetailControllerScript.render(
+		content_container,
+		page_description,
+		current_program,
+		_show_library
 	)
 
 
@@ -332,6 +353,7 @@ func _clear_dynamic_pages() -> void:
 	ZapPageControllerScript.clear(content_container)
 	ProductionPageControllerScript.clear(content_container)
 	LibraryPageControllerScript.clear(content_container)
+	LibraryProgramDetailControllerScript.clear(content_container)
 
 
 func _scroll_main_to_top() -> void:
