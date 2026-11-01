@@ -31,7 +31,7 @@ static func render(
 	actions.add_child(create_button)
 
 	var info_label: Label = Label.new()
-	info_label.text = "%d production(s) en cours | 7 sets disponibles au Studio 1" % active_productions.size()
+	info_label.text = "%d / 7 sets occupés au Studio 1" % active_productions.size()
 	info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	actions.add_child(info_label)
 
