@@ -7,7 +7,14 @@ static func build(
 	on_save: Callable,
 	on_main_menu: Callable
 ) -> Dictionary:
-	var existing_box: VBoxContainer = game_title.get_parent().get_node_or_null("TitleActions") as VBoxContainer
+	var parent: HBoxContainer = game_title.get_parent() as HBoxContainer
+	var visual_anchor: Control = game_title
+	var logo: TextureRect = parent.get_node_or_null("GameLogo") as TextureRect
+	if logo != null:
+		visual_anchor = logo
+		game_title.visible = false
+
+	var existing_box: VBoxContainer = parent.get_node_or_null("TitleActions") as VBoxContainer
 	if existing_box != null:
 		return {
 			"save_button": existing_box.get_node("Actions/SaveButton"),
@@ -15,19 +22,19 @@ static func build(
 			"status_label": existing_box.get_node("Actions/SaveStatusLabel")
 		}
 
-	var parent: HBoxContainer = game_title.get_parent() as HBoxContainer
-	var original_index: int = game_title.get_index()
+	var original_index: int = visual_anchor.get_index()
 
 	var title_box: VBoxContainer = VBoxContainer.new()
 	title_box.name = "TitleActions"
 	title_box.add_theme_constant_override("separation", 5)
 	parent.add_child(title_box)
 	parent.move_child(title_box, original_index)
-	game_title.reparent(title_box)
-	title_box.move_child(game_title, 0)
+	visual_anchor.reparent(title_box)
+	title_box.move_child(visual_anchor, 0)
 
 	var actions: HBoxContainer = HBoxContainer.new()
 	actions.name = "Actions"
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.add_theme_constant_override("separation", 6)
 	title_box.add_child(actions)
 
