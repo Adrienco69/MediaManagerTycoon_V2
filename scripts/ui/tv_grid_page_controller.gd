@@ -87,7 +87,7 @@ static func render(
 		time_range_holder.add_theme_constant_override("separation", 6)
 		time_range_row.add_child(time_range_holder)
 
-	var trash_target: ScheduleTrashTarget = null
+	var trash_target: Control = null
 	if editable:
 		var trash_row: HBoxContainer = HBoxContainer.new()
 		trash_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -154,7 +154,7 @@ static func render(
 	if editable and trash_target != null:
 		var refresh_after_delete: Callable = func() -> void:
 			rebuild_schedule.call(int(view_state.get("week_number", 1)))
-		trash_target.configure(channel, refresh_after_delete)
+		trash_target.call("configure", channel, refresh_after_delete)
 
 	if editable and time_range_holder != null:
 		var on_time_range_selected: Callable = func(range_id: String) -> void:
