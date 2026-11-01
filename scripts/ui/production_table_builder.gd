@@ -29,10 +29,14 @@ static func build(parent: VBoxContainer, productions: Array[Dictionary]) -> void
 		var total_episodes: int = maxi(int(production.get("episodes_total", 1)), 1)
 		var produced_episodes: int = ProductionRulesScript.get_produced_episode_count(production)
 		var remaining_minutes: int = int(production.get("production_remaining_minutes", 0))
+		var season_number: int = int(production.get("season_number", 0))
+		var season_text: String = "—"
+		if season_number > 0:
+			season_text = "Saison %d" % season_number
 
 		_add_cell(table, String(production.get("name", "")), 0, false)
 		_add_cell(table, String(production.get("format", "")), 1, false)
-		_add_cell(table, "Saison %d" % maxi(int(production.get("season_number", 1)), 1), 2, false)
+		_add_cell(table, season_text, 2, false)
 		_add_cell(table, "%d / %d" % [produced_episodes, total_episodes], 3, false)
 		_add_cell(table, ProductionRulesScript.format_remaining_time(remaining_minutes), 4, false)
 		_add_cell(table, "Production en cours | non diffusable", 5, false)
