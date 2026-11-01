@@ -129,6 +129,10 @@ func get_group_programs() -> Array[Dictionary]:
 	return _production_manager.get_programs()
 
 
+func get_active_productions() -> Array[Dictionary]:
+	return _production_manager.get_active_productions()
+
+
 func get_zap_channels() -> Array[Dictionary]:
 	return _mmtn_registry.get_channels()
 
