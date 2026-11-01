@@ -1,9 +1,8 @@
 class_name LibraryPageController
 extends RefCounted
 
-const ProgramStatusScript = preload("res://scripts/ui/library_program_status.gd")
 const DYNAMIC_NODE_NAME: String = "LibraryDynamic"
-const COLUMN_WIDTHS: Array[float] = [300.0, 180.0, 120.0, 170.0, 210.0]
+const COLUMN_WIDTHS: Array[float] = [300.0, 180.0, 120.0, 170.0, 170.0]
 
 
 static func render(
@@ -63,7 +62,7 @@ static func _build_table(
 		_add_cell(table, String(program.get("format", "")), 1, false)
 		_add_cell(table, "%d min" % int(program.get("duration_minutes", 0)), 2, false)
 		_add_cell(table, _get_available_episode_text(program), 3, false)
-		_add_cell(table, ProgramStatusScript.get_text(program), 4, false)
+		_add_cell(table, _get_library_status(program), 4, false)
 
 
 static func _get_available_episode_text(program: Dictionary) -> String:
@@ -74,6 +73,14 @@ static func _get_available_episode_text(program: Dictionary) -> String:
 	if available == total:
 		return str(available)
 	return "%d / %d" % [available, total]
+
+
+static func _get_library_status(program: Dictionary) -> String:
+	# La Bibliothèque reste volontairement simple : le renouvellement
+	# n'est présenté que dans la fiche détaillée du programme.
+	if bool(program.get("owned_by_group", false)):
+		return "Disponible"
+	return String(program.get("status", "Disponible"))
 
 
 static func _add_program_button_cell(
