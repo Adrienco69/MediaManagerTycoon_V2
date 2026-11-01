@@ -3,6 +3,7 @@ extends RefCounted
 
 const AIScheduleGeneratorScript = preload("res://scripts/core/ai_schedule_generator.gd")
 const ZapProgramLabelScript = preload("res://scripts/ui/zap_program_label.gd")
+const TimeRangeSelectorScript = preload("res://scripts/ui/schedule_time_range_selector.gd")
 
 const DAYS: Array[String] = [
 	"Lundi",
@@ -22,7 +23,8 @@ static func build(
 	channel: Dictionary,
 	programs: Array[Dictionary],
 	on_program_selected: Callable = Callable(),
-	day_buttons_parent: HBoxContainer = null
+	day_buttons_parent: HBoxContainer = null,
+	time_range_id: String = ""
 ) -> void:
 	var day_buttons: Array[Button] = []
 	var day_row: HBoxContainer = day_buttons_parent
@@ -68,7 +70,8 @@ static func build(
 				selected_day_label,
 				schedule,
 				scroll,
-				on_program_selected
+				on_program_selected,
+				time_range_id
 			)
 		)
 
@@ -82,7 +85,8 @@ static func build(
 		selected_day_label,
 		schedule,
 		scroll,
-		on_program_selected
+		on_program_selected,
+		time_range_id
 	)
 
 
@@ -96,7 +100,8 @@ static func _show_day(
 	selected_day_label: Label,
 	schedule: VBoxContainer,
 	scroll: ScrollContainer,
-	on_program_selected: Callable
+	on_program_selected: Callable,
+	time_range_id: String
 ) -> void:
 	for index: int in range(day_buttons.size()):
 		day_buttons[index].disabled = index == day_index
@@ -112,7 +117,14 @@ static func _show_day(
 		editable
 	)
 
-	for slot_index: int in range(48):
+	var start_slot: int = 0
+	var end_slot: int = 48
+	if editable and not time_range_id.is_empty():
+		var range_data: Dictionary = TimeRangeSelectorScript.get_range(time_range_id)
+		start_slot = int(range_data.get("start_slot", 0))
+		end_slot = int(range_data.get("end_slot", 48))
+
+	for slot_index: int in range(start_slot, end_slot):
 		var slot_text: String = slot_texts[slot_index]
 
 		# Dans un guide consultable, un programme n'apparaît qu'à son heure
