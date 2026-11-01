@@ -2,7 +2,7 @@ class_name ProductionTableBuilder
 extends RefCounted
 
 const ProductionRulesScript = preload("res://scripts/core/production_rules.gd")
-const COLUMN_WIDTHS: Array[float] = [280.0, 170.0, 110.0, 170.0, 160.0, 260.0]
+const COLUMN_WIDTHS: Array[float] = [280.0, 170.0, 100.0, 180.0, 180.0, 280.0]
 
 
 static func build(parent: VBoxContainer, productions: Array[Dictionary]) -> void:
@@ -20,26 +20,22 @@ static func build(parent: VBoxContainer, productions: Array[Dictionary]) -> void
 
 	_add_cell(table, "Programme", 0, true)
 	_add_cell(table, "Format", 1, true)
-	_add_cell(table, "Saison", 2, true)
-	_add_cell(table, "Épisodes produits", 3, true)
+	_add_cell(table, "Slot", 2, true)
+	_add_cell(table, "Lot", 3, true)
 	_add_cell(table, "Temps restant", 4, true)
 	_add_cell(table, "État", 5, true)
 
 	for production: Dictionary in productions:
-		var total_episodes: int = maxi(int(production.get("episodes_total", 1)), 1)
-		var produced_episodes: int = ProductionRulesScript.get_produced_episode_count(production)
+		var total_units: int = ProductionRulesScript.get_unit_count(production)
 		var remaining_minutes: int = int(production.get("production_remaining_minutes", 0))
-		var season_number: int = int(production.get("season_number", 0))
-		var season_text: String = "—"
-		if season_number > 0:
-			season_text = "Saison %d" % season_number
+		var slot_index: int = int(production.get("slot_index", 0))
 
 		_add_cell(table, String(production.get("name", "")), 0, false)
 		_add_cell(table, String(production.get("format", "")), 1, false)
-		_add_cell(table, season_text, 2, false)
-		_add_cell(table, "%d / %d" % [produced_episodes, total_episodes], 3, false)
+		_add_cell(table, "Slot %d" % slot_index if slot_index > 0 else "Slot ?", 2, false)
+		_add_cell(table, "%d unité(s)" % total_units, 3, false)
 		_add_cell(table, ProductionRulesScript.format_remaining_time(remaining_minutes), 4, false)
-		_add_cell(table, "Production en cours | non diffusable", 5, false)
+		_add_cell(table, "Lot en production | non diffusable", 5, false)
 
 
 static func _add_cell(table: GridContainer, text: String, column: int, is_header: bool) -> void:
