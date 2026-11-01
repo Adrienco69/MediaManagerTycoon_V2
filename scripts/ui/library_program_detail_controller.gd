@@ -43,6 +43,15 @@ static func render(
 	info_button.custom_minimum_size = Vector2(180, NAV_BUTTON_HEIGHT)
 	nav_row.add_child(info_button)
 
+	var is_zap_read_only: bool = back_button_text.contains("Zap'Chaine")
+	var can_manage_seasons: bool = not is_zap_read_only and _can_manage_seasons(program)
+	var manage_seasons_button: Button = null
+	if can_manage_seasons:
+		manage_seasons_button = Button.new()
+		manage_seasons_button.text = "Gérer les saisons"
+		manage_seasons_button.custom_minimum_size = Vector2(190, NAV_BUTTON_HEIGHT)
+		nav_row.add_child(manage_seasons_button)
+
 	var production_diffusion_button: Button = Button.new()
 	production_diffusion_button.text = "Diffusion par épisodes"
 	production_diffusion_button.custom_minimum_size = Vector2(220, NAV_BUTTON_HEIGHT)
@@ -59,23 +68,26 @@ static func render(
 
 	var callbacks: Dictionary = {}
 	var manage_seasons_callable: Callable = on_manage_seasons
-	var is_zap_read_only: bool = back_button_text.contains("Zap'Chaine")
 
 	callbacks["show_info"] = func() -> void:
 		_clear_holder(tab_content)
 		page_description.text = "Fiche du programme | informations et historique des diffusions."
 		info_button.disabled = true
+		if manage_seasons_button != null:
+			manage_seasons_button.disabled = false
 		production_diffusion_button.disabled = false
 		season_diffusion_button.disabled = false
 		var current_program: Dictionary = GameState.get_program(String(program.get("id", "")))
 		if current_program.is_empty():
 			current_program = program
-		_build_program_info(tab_content, current_program, manage_seasons_callable)
+		_build_program_info(tab_content, current_program)
 
-	if not is_zap_read_only and not manage_seasons_callable.is_valid() and _can_manage_seasons(program):
+	if can_manage_seasons and not manage_seasons_callable.is_valid():
 		manage_seasons_callable = func() -> void:
 			_clear_holder(tab_content)
 			info_button.disabled = false
+			if manage_seasons_button != null:
+				manage_seasons_button.disabled = true
 			production_diffusion_button.disabled = false
 			season_diffusion_button.disabled = false
 			var current_program: Dictionary = GameState.get_program(String(program.get("id", "")))
@@ -106,6 +118,8 @@ static func render(
 		_clear_holder(tab_content)
 		page_description.text = "Diffusions classées selon le code prod des unités."
 		info_button.disabled = false
+		if manage_seasons_button != null:
+			manage_seasons_button.disabled = false
 		production_diffusion_button.disabled = true
 		season_diffusion_button.disabled = false
 		var current_program: Dictionary = GameState.get_program(String(program.get("id", "")))
@@ -117,6 +131,8 @@ static func render(
 		_clear_holder(tab_content)
 		page_description.text = "Diffusions classées selon le découpage éditorial en saisons."
 		info_button.disabled = false
+		if manage_seasons_button != null:
+			manage_seasons_button.disabled = false
 		production_diffusion_button.disabled = false
 		season_diffusion_button.disabled = true
 		var current_program: Dictionary = GameState.get_program(String(program.get("id", "")))
@@ -125,6 +141,8 @@ static func render(
 		EpisodeTableScript.build_by_season(tab_content, current_program)
 
 	info_button.pressed.connect(show_info)
+	if manage_seasons_button != null and manage_seasons_callable.is_valid():
+		manage_seasons_button.pressed.connect(manage_seasons_callable)
 	production_diffusion_button.pressed.connect(show_production_diffusion)
 	season_diffusion_button.pressed.connect(show_season_diffusion)
 	show_info.call()
@@ -137,7 +155,7 @@ static func clear(content_container: VBoxContainer) -> void:
 		existing.queue_free()
 
 
-static func _build_program_info(parent: VBoxContainer, program: Dictionary, on_manage_seasons: Callable) -> void:
+static func _build_program_info(parent: VBoxContainer, program: Dictionary) -> void:
 	var table: GridContainer = GridContainer.new()
 	table.columns = 2
 	table.add_theme_constant_override("h_separation", 0)
@@ -148,10 +166,7 @@ static func _build_program_info(parent: VBoxContainer, program: Dictionary, on_m
 	_add_info_row(table, "Format", String(program.get("format", "")))
 	_add_info_row(table, "Durée", "%d min" % int(program.get("duration_minutes", 0)))
 	_add_info_row(table, "Unités disponibles", _get_available_unit_text(program))
-	if _can_manage_seasons(program) and on_manage_seasons.is_valid():
-		_add_season_info_row(table, _get_season_text(program), on_manage_seasons)
-	else:
-		_add_info_row(table, "Saison(s) éditoriale(s)", _get_season_text(program))
+	_add_info_row(table, "Saison(s) éditoriale(s)", _get_season_text(program))
 	_add_info_row(table, "État", ProgramStatusScript.get_text(program))
 
 
@@ -160,28 +175,6 @@ static func _can_manage_seasons(program: Dictionary) -> bool:
 	if format_name == "Film" or format_name == "Téléfilm":
 		return false
 	return int(program.get("units_total", program.get("episodes_total", 0))) > 1
-
-
-static func _add_season_info_row(table: GridContainer, value_text: String, on_manage_seasons: Callable) -> void:
-	_add_panel_label(table, "Saison(s) éditoriale(s)", INFO_WIDTHS[0], true)
-
-	var panel: PanelContainer = _create_panel(INFO_WIDTHS[1])
-	table.add_child(panel)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	panel.add_child(row)
-
-	var value_label := Label.new()
-	value_label.text = value_text
-	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(value_label)
-
-	var manage_button := Button.new()
-	manage_button.text = "Gérer les saisons"
-	manage_button.custom_minimum_size = Vector2(160, 34)
-	manage_button.pressed.connect(on_manage_seasons)
-	row.add_child(manage_button)
 
 
 static func _get_available_unit_text(program: Dictionary) -> String:
