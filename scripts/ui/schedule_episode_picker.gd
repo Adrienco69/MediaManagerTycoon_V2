@@ -65,6 +65,7 @@ static func open(
 	episode_list.add_theme_constant_override("separation", 6)
 	scroll.add_child(episode_list)
 
+	var existing_start: bool = _is_existing_start(channel, week_number, day_index, slot_index)
 	for global_episode: int in range(1, episode_count + 1):
 		var episode_data: Dictionary = ScheduleEpisodeHelperScript.get_episode_data(program, global_episode)
 		if episode_data.is_empty():
@@ -79,15 +80,25 @@ static func open(
 
 		var captured_episode: Dictionary = episode_data.duplicate(true)
 		episode_button.pressed.connect(func() -> void:
-			var placed: bool = GameState.schedule_program(
-				channel,
-				week_number,
-				day_index,
-				slot_index,
-				program,
-				captured_episode
-			)
-			if not placed:
+			var saved: bool = false
+			if existing_start:
+				saved = GameState.update_scheduled_episode(
+					channel,
+					week_number,
+					day_index,
+					slot_index,
+					captured_episode
+				)
+			else:
+				saved = GameState.schedule_program(
+					channel,
+					week_number,
+					day_index,
+					slot_index,
+					program,
+					captured_episode
+				)
+			if not saved:
 				return
 			popup.hide()
 			if refresh_callback.is_valid():
@@ -105,6 +116,22 @@ static func open(
 			popup.queue_free()
 	)
 	popup.popup_centered(Vector2i(600, 560))
+
+
+static func _is_existing_start(
+	channel: Dictionary,
+	week_number: int,
+	day_index: int,
+	slot_index: int
+) -> bool:
+	var day_slots: Array[Dictionary] = GameState.get_player_day_schedule(
+		channel,
+		week_number,
+		day_index
+	)
+	if slot_index < 0 or slot_index >= day_slots.size():
+		return false
+	return String(day_slots[slot_index].get("kind", "")) == "start"
 
 
 static func _place_without_episode(
