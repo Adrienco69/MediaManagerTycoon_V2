@@ -41,6 +41,12 @@ static func _get_episode_label(
 	slot_index: int,
 	slot_entry: Dictionary
 ) -> String:
+	var available_episodes: int = int(program.get("episodes_available", 0))
+	var total_episodes: int = int(program.get("episodes_total", 0))
+	var episode_count: int = available_episodes if available_episodes > 0 else total_episodes
+	if episode_count <= 1:
+		return ""
+
 	var scheduled_episode: int = int(slot_entry.get("episode_global", 0))
 	if scheduled_episode > 0:
 		return ScheduleEpisodeHelperScript.get_compact_label(
@@ -52,12 +58,8 @@ static func _get_episode_label(
 			}
 		)
 
-	var available_episodes: int = int(program.get("episodes_available", 0))
-	var total_episodes: int = int(program.get("episodes_total", 0))
-	var episode_count: int = available_episodes if available_episodes > 0 else total_episodes
-
-	if episode_count <= 1:
-		return ""
+	if not slot_entry.is_empty():
+		return "Épisode à choisir"
 
 	var schedule_seed: int = int(channel.get("schedule_seed", 1))
 	var program_id: String = String(program.get("id", program.get("name", "programme")))
