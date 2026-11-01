@@ -2,6 +2,7 @@ extends Control
 
 const UIThemeManagerScript = preload("res://scripts/ui/ui_theme_manager.gd")
 const StartScreenGradientScript = preload("res://scripts/ui/start_screen_gradient.gd")
+const StartMenuControllerScript = preload("res://scripts/ui/start_menu_controller.gd")
 const TopBarLayoutScript = preload("res://scripts/ui/top_bar_layout.gd")
 const NavigationButtonStateScript = preload("res://scripts/ui/navigation_button_state.gd")
 const GroupPageControllerScript = preload("res://scripts/ui/group_page_controller.gd")
@@ -14,7 +15,12 @@ const MainContentScrollScript = preload("res://scripts/ui/main_content_scroll.gd
 
 @onready var background: ColorRect = $Background
 @onready var start_screen: Control = %StartScreen
+@onready var home_panel: Control = %HomePanel
+@onready var new_game_panel: Control = $StartScreen/Center/Panel
 @onready var game_ui: Control = %GameUI
+@onready var new_game_menu_button: Button = %NewGameMenuButton
+@onready var load_game_button: Button = %LoadGameButton
+@onready var back_to_home_button: Button = %BackToHomeButton
 @onready var player_name_input: LineEdit = %PlayerNameInput
 @onready var company_name_input: LineEdit = %CompanyNameInput
 @onready var start_game_button: Button = %StartGameButton
@@ -40,6 +46,7 @@ const MainContentScrollScript = preload("res://scripts/ui/main_content_scroll.gd
 @onready var content_container: VBoxContainer = $GameUI/RootVBox/MainPanel/ContentMargin/ContentVBox
 @onready var page_title: Label = %PageTitle
 @onready var page_description: Label = %PageDescription
+@onready var home_title: Label = %HomeTitle
 @onready var start_title: Label = $StartScreen/Center/Panel/Margin/VBox/Title
 
 var _last_theme_day_key: int = -1
@@ -64,11 +71,7 @@ func _ready() -> void:
 	_connect_game_signals()
 	_connect_buttons()
 	_refresh_all()
-
-	if GameState.has_started_game():
-		_show_game_ui()
-	else:
-		_show_start_screen()
+	_show_start_screen()
 
 
 func _setup_start_screen_gradient() -> void:
@@ -95,6 +98,8 @@ func _connect_game_signals() -> void:
 
 
 func _connect_buttons() -> void:
+	new_game_menu_button.pressed.connect(_show_new_game_form)
+	back_to_home_button.pressed.connect(_show_start_screen)
 	start_game_button.pressed.connect(_start_new_game)
 	player_name_input.text_submitted.connect(_on_identity_text_submitted)
 	company_name_input.text_submitted.connect(_on_identity_text_submitted)
@@ -115,8 +120,22 @@ func _show_start_screen() -> void:
 	GameState.set_time_mode(GameState.TimeMode.PAUSED)
 	start_screen.visible = true
 	game_ui.visible = false
-	start_error_label.text = ""
-	player_name_input.grab_focus()
+	StartMenuControllerScript.show_home(
+		home_panel,
+		new_game_panel,
+		load_game_button,
+		start_error_label
+	)
+	new_game_menu_button.grab_focus()
+
+
+func _show_new_game_form() -> void:
+	StartMenuControllerScript.show_new_game(
+		home_panel,
+		new_game_panel,
+		player_name_input,
+		start_error_label
+	)
 
 
 func _show_game_ui() -> void:
@@ -196,6 +215,7 @@ func _refresh_calendar_theme() -> void:
 		speed_label,
 		page_title,
 		page_description,
+		home_title,
 		start_title
 	]
 
