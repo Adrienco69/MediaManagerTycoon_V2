@@ -11,6 +11,7 @@ const GroupPageControllerScript = preload("res://scripts/ui/group_page_controlle
 const TVGridPageControllerScript = preload("res://scripts/ui/tv_grid_page_controller.gd")
 const ZapPageControllerScript = preload("res://scripts/ui/zap_page_controller.gd")
 const ProductionPageControllerScript = preload("res://scripts/ui/production_page_controller.gd")
+const ProductionCreationPageScript = preload("res://scripts/ui/production_creation_page.gd")
 const LibraryPageControllerScript = preload("res://scripts/ui/library_page_controller.gd")
 const LibraryProgramDetailControllerScript = preload("res://scripts/ui/library_program_detail_controller.gd")
 const MainContentScrollScript = preload("res://scripts/ui/main_content_scroll.gd")
@@ -114,6 +115,7 @@ func _connect_game_signals() -> void:
 	GameState.credits_changed.connect(_refresh_credits)
 	GameState.speed_changed.connect(_refresh_speed)
 	GameState.identity_changed.connect(_on_identity_changed)
+	GameState.productions_changed.connect(_on_productions_changed)
 
 
 func _connect_buttons() -> void:
@@ -246,6 +248,11 @@ func _on_identity_changed(_player_name: String, _company_name: String) -> void:
 func _on_first_channel_create_requested(channel_name: String) -> void:
 	if GameState.create_first_channel(channel_name):
 		call_deferred("_show_group")
+
+
+func _on_productions_changed() -> void:
+	if game_ui.visible and page_title.text == "Productions":
+		call_deferred("_show_productions")
 
 
 func _on_pause_pressed() -> void:
@@ -482,7 +489,23 @@ func _show_library_program(program: Dictionary) -> void:
 
 
 func _on_create_production_requested() -> void:
-	page_description.text = "Création de production | prochaine étape : définir le formulaire de création avec les règles de format, durée, épisodes, coût et tournage."
+	_clear_dynamic_pages()
+	_scroll_main_to_top()
+	NavigationButtonStateScript.apply(_get_navigation_buttons(), production_button)
+	page_title.text = "Productions | Nouvelle production"
+	ProductionCreationPageScript.render(
+		content_container,
+		page_description,
+		_show_productions,
+		_start_production_from_form
+	)
+
+
+func _start_production_from_form(spec: Dictionary) -> String:
+	var error_text: String = GameState.create_production(spec)
+	if error_text.is_empty():
+		call_deferred("_show_productions")
+	return error_text
 
 
 func _clear_dynamic_pages() -> void:
@@ -490,6 +513,7 @@ func _clear_dynamic_pages() -> void:
 	TVGridPageControllerScript.clear(content_container)
 	ZapPageControllerScript.clear(content_container)
 	ProductionPageControllerScript.clear(content_container)
+	ProductionCreationPageScript.clear(content_container)
 	LibraryPageControllerScript.clear(content_container)
 	LibraryProgramDetailControllerScript.clear(content_container)
 
