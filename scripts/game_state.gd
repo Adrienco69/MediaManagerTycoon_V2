@@ -1,6 +1,7 @@
 extends Node
 
 const PlayerChannelManagerScript = preload("res://scripts/core/player_channel_manager.gd")
+const PlayerScheduleManagerScript = preload("res://scripts/core/player_schedule_manager.gd")
 const MMTNRegistryScript = preload("res://scripts/core/mmtn_registry.gd")
 const ProductionManagerScript = preload("res://scripts/core/production_manager.gd")
 const ProductionRulesScript = preload("res://scripts/core/production_rules.gd")
@@ -12,6 +13,7 @@ signal identity_changed(player_name: String, company_name: String)
 signal channel_created(channel: Dictionary)
 signal programs_changed
 signal productions_changed
+signal schedule_changed
 
 enum TimeMode {
 	PAUSED,
@@ -62,6 +64,7 @@ var time_mode: TimeMode = TimeMode.PAUSED
 
 var _minute_buffer: float = 0.0
 var _player_channel_manager: PlayerChannelManager = PlayerChannelManagerScript.new()
+var _player_schedule_manager: PlayerScheduleManager = PlayerScheduleManagerScript.new()
 var _mmtn_registry: MMTNRegistry = MMTNRegistryScript.new()
 var _production_manager: ProductionManager = ProductionManagerScript.new()
 
@@ -97,6 +100,7 @@ func start_new_game(new_player_name: String, new_company_name: String) -> void:
 	time_mode = TimeMode.PAUSED
 	_minute_buffer = 0.0
 	_player_channel_manager.reset()
+	_player_schedule_manager.reset()
 	_mmtn_registry.reset()
 	_production_manager.reset()
 
@@ -119,6 +123,7 @@ func get_save_data() -> Dictionary:
 		},
 		"time_mode": int(time_mode),
 		"player_channels": _player_channel_manager.get_channels(),
+		"player_schedules": _player_schedule_manager.get_save_data(),
 		"mmtn_history": _mmtn_registry.get_channels(),
 		"programs": _production_manager.get_programs(),
 		"active_productions": _production_manager.get_active_productions(),
@@ -155,6 +160,9 @@ func load_save_data(data: Dictionary) -> bool:
 	var channels: Array = channels_value if channels_value is Array else []
 	_player_channel_manager.load_channels(channels)
 
+	var schedules_value: Variant = data.get("player_schedules", {})
+	_player_schedule_manager.load_data(schedules_value)
+
 	var mmtn_value: Variant = data.get("mmtn_history", [])
 	var mmtn_history: Array = mmtn_value if mmtn_value is Array else []
 	_mmtn_registry.load_history(mmtn_history)
@@ -178,6 +186,7 @@ func _emit_full_state_refresh() -> void:
 	speed_changed.emit(time_mode)
 	programs_changed.emit()
 	productions_changed.emit()
+	schedule_changed.emit()
 
 
 func has_started_game() -> bool:
@@ -198,6 +207,52 @@ func get_first_channel() -> Dictionary:
 
 func get_player_channels() -> Array[Dictionary]:
 	return _player_channel_manager.get_channels()
+
+
+func get_player_day_schedule(
+	channel: Dictionary,
+	week_number: int,
+	day_index: int
+) -> Array[Dictionary]:
+	var channel_number: int = int(channel.get("mmtn_number", 0))
+	return _player_schedule_manager.get_day_slots(channel_number, week_number, day_index)
+
+
+func can_schedule_program(
+	channel: Dictionary,
+	week_number: int,
+	day_index: int,
+	slot_index: int,
+	program: Dictionary
+) -> bool:
+	var channel_number: int = int(channel.get("mmtn_number", 0))
+	return _player_schedule_manager.can_place_program(
+		channel_number,
+		week_number,
+		day_index,
+		slot_index,
+		program
+	)
+
+
+func schedule_program(
+	channel: Dictionary,
+	week_number: int,
+	day_index: int,
+	slot_index: int,
+	program: Dictionary
+) -> bool:
+	var channel_number: int = int(channel.get("mmtn_number", 0))
+	var placed: bool = _player_schedule_manager.place_program(
+		channel_number,
+		week_number,
+		day_index,
+		slot_index,
+		program
+	)
+	if placed:
+		schedule_changed.emit()
+	return placed
 
 
 func get_group_programs() -> Array[Dictionary]:
