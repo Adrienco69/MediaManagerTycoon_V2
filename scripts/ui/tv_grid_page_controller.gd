@@ -5,6 +5,7 @@ const WeekSelectorScript = preload("res://scripts/ui/schedule_week_selector.gd")
 const TimeRangeSelectorScript = preload("res://scripts/ui/schedule_time_range_selector.gd")
 const DayScheduleBuilderScript = preload("res://scripts/ui/tv_day_schedule_builder.gd")
 const ProgramCatalogPanelScript = preload("res://scripts/ui/program_catalog_panel.gd")
+const ScheduleTrashTargetScript = preload("res://scripts/ui/schedule_trash_target.gd")
 const DYNAMIC_NODE_NAME: String = "GridDynamic"
 
 
@@ -86,6 +87,17 @@ static func render(
 		time_range_holder.add_theme_constant_override("separation", 6)
 		time_range_row.add_child(time_range_holder)
 
+	var trash_target: ScheduleTrashTarget = null
+	if editable:
+		var trash_row: HBoxContainer = HBoxContainer.new()
+		trash_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		trash_row.alignment = BoxContainer.ALIGNMENT_END
+		dynamic.add_child(trash_row)
+
+		trash_target = ScheduleTrashTargetScript.new()
+		trash_target.size_flags_horizontal = Control.SIZE_SHRINK_END
+		trash_row.add_child(trash_target)
+
 	var body: HBoxContainer = HBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -138,6 +150,11 @@ static func render(
 			String(view_state.get("time_range_id", "")) if editable else "",
 			rebuild_catalog
 		)
+
+	if editable and trash_target != null:
+		var refresh_after_delete: Callable = func() -> void:
+			rebuild_schedule.call(int(view_state.get("week_number", 1)))
+		trash_target.configure(channel, refresh_after_delete)
 
 	if editable and time_range_holder != null:
 		var on_time_range_selected: Callable = func(range_id: String) -> void:
