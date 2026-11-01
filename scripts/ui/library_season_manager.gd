@@ -46,6 +46,11 @@ static func render(
 	new_season_button.custom_minimum_size = Vector2(180, 40)
 	season_row.add_child(new_season_button)
 
+	var save_button := Button.new()
+	save_button.text = "Enregistrer la saison"
+	save_button.custom_minimum_size = Vector2(220, 40)
+	season_row.add_child(save_button)
+
 	var selected_season := [_initial_season_number(program)]
 	_populate_season_select(season_select, program, selected_season[0])
 
@@ -72,12 +77,6 @@ static func render(
 	editorial_title.text = "Ordre éditorial de la saison"
 	editorial_title.add_theme_font_size_override("font_size", 18)
 	dynamic.add_child(editorial_title)
-
-	var save_button := Button.new()
-	save_button.text = "Enregistrer la saison"
-	save_button.custom_minimum_size = Vector2(220, 42)
-	save_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	dynamic.add_child(save_button)
 
 	var selected_holder := VBoxContainer.new()
 	selected_holder.add_theme_constant_override("separation", 6)
