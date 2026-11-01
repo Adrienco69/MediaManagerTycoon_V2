@@ -39,16 +39,36 @@ func _on_pressed() -> void:
 	)
 	if slot_index < 0 or slot_index >= day_slots.size():
 		return
-	if not day_slots[slot_index].is_empty():
+
+	var slot_entry: Dictionary = day_slots[slot_index]
+	if slot_entry.is_empty():
+		ScheduleProgramPickerScript.open(
+			self,
+			channel,
+			week_number,
+			day_index,
+			slot_index,
+			GameState.get_group_programs(),
+			refresh_callback
+		)
 		return
 
-	ScheduleProgramPickerScript.open(
+	if String(slot_entry.get("kind", "")) != "start":
+		return
+	if int(slot_entry.get("episode_global", 0)) > 0:
+		return
+
+	var program: Dictionary = _get_program_for_slot(slot_entry)
+	if program.is_empty() or not ScheduleEpisodeHelperScript.requires_episode_choice(program):
+		return
+
+	ScheduleEpisodePickerScript.open(
 		self,
 		channel,
 		week_number,
 		day_index,
 		slot_index,
-		GameState.get_group_programs(),
+		program,
 		refresh_callback
 	)
 
@@ -106,3 +126,17 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	)
 	if placed and refresh_callback.is_valid():
 		refresh_callback.call()
+
+
+func _get_program_for_slot(slot_entry: Dictionary) -> Dictionary:
+	var program_id: String = String(slot_entry.get("program_id", ""))
+	if not program_id.is_empty():
+		var program_by_id: Dictionary = GameState.get_program(program_id)
+		if not program_by_id.is_empty():
+			return program_by_id
+
+	var program_name: String = String(slot_entry.get("program_name", ""))
+	for program: Dictionary in GameState.get_group_programs():
+		if String(program.get("name", "")) == program_name:
+			return program.duplicate(true)
+	return {}
