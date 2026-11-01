@@ -28,7 +28,7 @@ func configure(
 	if not pressed.is_connected(_on_pressed):
 		pressed.connect(_on_pressed)
 
-	tooltip_text = "Cliquez pour programmer ce créneau, ou glissez-déposez un programme."
+	tooltip_text = "Cliquez pour programmer ce créneau, glissez-déposez un programme, ou déposez la poubelle sur une diffusion."
 
 
 func _on_pressed() -> void:
@@ -92,6 +92,10 @@ func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 
 	var drag_data: Dictionary = data as Dictionary
 	var drag_type: String = String(drag_data.get("type", ""))
+
+	if drag_type == "schedule_trash":
+		return not _get_source_drag_data().is_empty()
+
 	if drag_type != "program" and drag_type != "scheduled_program":
 		return false
 
@@ -113,11 +117,17 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 		return
 
 	var drag_data: Dictionary = (data as Dictionary).duplicate(true)
+	var drag_type: String = String(drag_data.get("type", ""))
+
+	if drag_type == "schedule_trash":
+		_open_delete_confirmation()
+		return
+
 	var program_value: Variant = drag_data.get("program", {})
 	if not program_value is Dictionary:
 		return
 
-	if String(drag_data.get("type", "")) == "scheduled_program":
+	if drag_type == "scheduled_program":
 		if (
 			int(drag_data.get("source_week", -1)) == week_number
 			and int(drag_data.get("source_day", -1)) == day_index
@@ -128,7 +138,7 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	var program: Dictionary = (program_value as Dictionary).duplicate(true)
 	var ignored_start: int = -1
 	if (
-		String(drag_data.get("type", "")) == "scheduled_program"
+		drag_type == "scheduled_program"
 		and int(drag_data.get("source_week", -1)) == week_number
 		and int(drag_data.get("source_day", -1)) == day_index
 	):
@@ -240,6 +250,42 @@ func _open_replace_confirmation(
 			dialog.queue_free()
 	)
 	dialog.popup_centered(Vector2i(520, 210))
+
+
+func _open_delete_confirmation() -> void:
+	var source_data: Dictionary = _get_source_drag_data()
+	if source_data.is_empty():
+		return
+
+	var program_value: Variant = source_data.get("program", {})
+	var program_name: String = "cette diffusion"
+	if program_value is Dictionary:
+		program_name = String((program_value as Dictionary).get("name", program_name))
+
+	var dialog: ConfirmationDialog = ConfirmationDialog.new()
+	dialog.title = "Supprimer la diffusion ?"
+	dialog.dialog_text = "Voulez-vous supprimer %s de la grille ?\nLe programme restera dans votre bibliothèque." % program_name
+	dialog.ok_button_text = "Supprimer"
+	dialog.cancel_button_text = "Annuler"
+	add_child(dialog)
+
+	dialog.confirmed.connect(func() -> void:
+		var removed: bool = GameState.remove_scheduled_program(
+			channel,
+			week_number,
+			day_index,
+			int(source_data.get("source_slot", slot_index))
+		)
+		if removed and refresh_callback.is_valid():
+			refresh_callback.call()
+		if is_instance_valid(dialog):
+			dialog.queue_free()
+	)
+	dialog.canceled.connect(func() -> void:
+		if is_instance_valid(dialog):
+			dialog.queue_free()
+	)
+	dialog.popup_centered(Vector2i(520, 220))
 
 
 func _get_source_drag_data() -> Dictionary:
