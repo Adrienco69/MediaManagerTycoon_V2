@@ -2,6 +2,8 @@ class_name ScheduleProgramPicker
 extends RefCounted
 
 const ScheduleWeekUsageScript = preload("res://scripts/ui/schedule_week_usage.gd")
+const ScheduleEpisodeHelperScript = preload("res://scripts/ui/schedule_episode_helper.gd")
+const ScheduleEpisodePickerScript = preload("res://scripts/ui/schedule_episode_picker.gd")
 
 const DAYS: Array[String] = [
 	"Lundi",
@@ -111,12 +113,26 @@ static func open(
 		available_count += 1
 		var captured_program: Dictionary = program.duplicate(true)
 		program_button.pressed.connect(func() -> void:
+			if ScheduleEpisodeHelperScript.requires_episode_choice(captured_program):
+				popup.hide()
+				ScheduleEpisodePickerScript.open(
+					anchor,
+					channel,
+					week_number,
+					day_index,
+					slot_index,
+					captured_program,
+					refresh_callback
+				)
+				return
+
 			var placed: bool = GameState.schedule_program(
 				channel,
 				week_number,
 				day_index,
 				slot_index,
-				captured_program
+				captured_program,
+				{}
 			)
 			if not placed:
 				return
