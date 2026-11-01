@@ -42,6 +42,13 @@ func register_channel(channel: Dictionary) -> void:
 	_history.append(entry)
 
 
+func load_history(history: Array) -> void:
+	_history.clear()
+	for value: Variant in history:
+		if value is Dictionary:
+			_history.append((value as Dictionary).duplicate(true))
+
+
 func close_channel(mmtn_number: int, closed_date: String) -> bool:
 	for index: int in range(_history.size()):
 		if int(_history[index].get("mmtn_number", 0)) != mmtn_number:
