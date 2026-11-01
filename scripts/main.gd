@@ -3,6 +3,8 @@ extends Control
 const UIThemeManagerScript = preload("res://scripts/ui/ui_theme_manager.gd")
 const StartScreenGradientScript = preload("res://scripts/ui/start_screen_gradient.gd")
 const StartMenuControllerScript = preload("res://scripts/ui/start_menu_controller.gd")
+const GameHeaderActionsScript = preload("res://scripts/ui/game_header_actions.gd")
+const SaveGameManagerScript = preload("res://scripts/core/save_game_manager.gd")
 const TopBarLayoutScript = preload("res://scripts/ui/top_bar_layout.gd")
 const NavigationButtonStateScript = preload("res://scripts/ui/navigation_button_state.gd")
 const GroupPageControllerScript = preload("res://scripts/ui/group_page_controller.gd")
@@ -51,6 +53,10 @@ const MainContentScrollScript = preload("res://scripts/ui/main_content_scroll.gd
 
 var _last_theme_day_key: int = -1
 var _main_content_scroll: ScrollContainer
+var _save_button: Button
+var _main_menu_button: Button
+var _save_status_label: Label
+var _quit_game_button: Button
 
 
 func _ready() -> void:
@@ -68,6 +74,17 @@ func _ready() -> void:
 		day_button,
 		week_button
 	)
+
+	var header_actions: Dictionary = GameHeaderActionsScript.build(
+		game_title,
+		_save_game,
+		_return_to_main_menu
+	)
+	_save_button = header_actions.get("save_button") as Button
+	_main_menu_button = header_actions.get("menu_button") as Button
+	_save_status_label = header_actions.get("status_label") as Label
+	_quit_game_button = StartMenuControllerScript.ensure_quit_button(home_panel, _quit_game)
+
 	_connect_game_signals()
 	_connect_buttons()
 	_refresh_all()
@@ -99,6 +116,7 @@ func _connect_game_signals() -> void:
 
 func _connect_buttons() -> void:
 	new_game_menu_button.pressed.connect(_show_new_game_form)
+	load_game_button.pressed.connect(_load_game)
 	back_to_home_button.pressed.connect(_show_start_screen)
 	start_game_button.pressed.connect(_start_new_game)
 	player_name_input.text_submitted.connect(_on_identity_text_submitted)
@@ -124,8 +142,11 @@ func _show_start_screen() -> void:
 		home_panel,
 		new_game_panel,
 		load_game_button,
-		start_error_label
+		start_error_label,
+		SaveGameManagerScript.has_save()
 	)
+	if _save_status_label != null:
+		_save_status_label.text = ""
 	new_game_menu_button.grab_focus()
 
 
@@ -141,6 +162,8 @@ func _show_new_game_form() -> void:
 func _show_game_ui() -> void:
 	start_screen.visible = false
 	game_ui.visible = true
+	if _save_status_label != null:
+		_save_status_label.text = ""
 	_show_group()
 
 
@@ -157,7 +180,44 @@ func _start_new_game() -> void:
 		return
 
 	GameState.start_new_game(new_player_name, new_company_name)
+	_last_theme_day_key = -1
+	_refresh_all()
 	_show_game_ui()
+
+
+func _load_game() -> void:
+	var save_data: Dictionary = SaveGameManagerScript.load_game()
+	if save_data.is_empty():
+		load_game_button.disabled = true
+		load_game_button.tooltip_text = "Sauvegarde introuvable ou invalide."
+		return
+
+	if not GameState.load_save_data(save_data):
+		load_game_button.disabled = true
+		load_game_button.tooltip_text = "La sauvegarde ne peut pas être chargée."
+		return
+
+	_last_theme_day_key = -1
+	_refresh_all()
+	_show_game_ui()
+
+
+func _save_game() -> void:
+	if not GameState.has_started_game():
+		return
+
+	var saved: bool = SaveGameManagerScript.save_game(GameState.get_save_data())
+	if _save_status_label != null:
+		_save_status_label.text = "Sauvegardé" if saved else "Erreur sauvegarde"
+
+
+func _return_to_main_menu() -> void:
+	GameState.set_time_mode(GameState.TimeMode.PAUSED)
+	_show_start_screen()
+
+
+func _quit_game() -> void:
+	get_tree().quit()
 
 
 func _on_identity_changed(_player_name: String, _company_name: String) -> void:
