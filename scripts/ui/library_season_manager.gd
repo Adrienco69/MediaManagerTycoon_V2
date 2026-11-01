@@ -28,37 +28,89 @@ static func render(
 	back_button.pressed.connect(on_back)
 	dynamic.add_child(back_button)
 
-	var form := GridContainer.new()
-	form.columns = 2
-	form.add_theme_constant_override("h_separation", 12)
-	form.add_theme_constant_override("v_separation", 8)
-	dynamic.add_child(form)
+	var season_title := Label.new()
+	season_title.text = "Saisons"
+	season_title.add_theme_font_size_override("font_size", 18)
+	dynamic.add_child(season_title)
 
-	var season_input := SpinBox.new()
-	season_input.min_value = 1
-	season_input.max_value = 999
-	season_input.step = 1
-	season_input.value = _next_season_number(program)
-	season_input.custom_minimum_size = Vector2(220, 40)
-	_add_field(form, "Saison", season_input)
+	var season_row := HBoxContainer.new()
+	season_row.add_theme_constant_override("separation", 8)
+	dynamic.add_child(season_row)
+
+	var season_select := OptionButton.new()
+	season_select.custom_minimum_size = Vector2(220, 40)
+	season_row.add_child(season_select)
+
+	var new_season_button := Button.new()
+	new_season_button.text = "+ Nouvelle saison"
+	new_season_button.custom_minimum_size = Vector2(180, 40)
+	season_row.add_child(new_season_button)
+
+	var selected_season := [_initial_season_number(program)]
+	_populate_season_select(season_select, program, selected_season[0])
+
+	var code_row := HBoxContainer.new()
+	code_row.add_theme_constant_override("separation", 8)
+	dynamic.add_child(code_row)
+
+	var code_label := Label.new()
+	code_label.text = "Code prod"
+	code_label.custom_minimum_size = Vector2(190, 40)
+	code_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	code_row.add_child(code_label)
 
 	var code_select := OptionButton.new()
 	code_select.custom_minimum_size = Vector2(320, 40)
-	_add_field(form, "Code prod", code_select)
+	code_row.add_child(code_select)
 
 	var add_button := Button.new()
 	add_button.text = "Ajouter à la saison"
 	add_button.custom_minimum_size = Vector2(220, 40)
-	dynamic.add_child(add_button)
+	code_row.add_child(add_button)
 
-	var selected_title := Label.new()
-	selected_title.text = "Ordre éditorial de la saison"
-	selected_title.add_theme_font_size_override("font_size", 18)
-	dynamic.add_child(selected_title)
+	var editorial_title := Label.new()
+	editorial_title.text = "Ordre éditorial de la saison"
+	editorial_title.add_theme_font_size_override("font_size", 18)
+	dynamic.add_child(editorial_title)
 
 	var selected_holder := VBoxContainer.new()
 	selected_holder.add_theme_constant_override("separation", 6)
 	dynamic.add_child(selected_holder)
+
+	var selected_codes: Array[int] = _get_existing_codes(program, selected_season[0])
+	var refresh_selection: Callable
+	refresh_selection = func() -> void:
+		_refresh_code_dropdown(code_select, program, selected_codes)
+		_rebuild_selected_codes(selected_holder, selected_codes, refresh_selection)
+		add_button.disabled = code_select.item_count <= 0
+
+	season_select.item_selected.connect(func(index: int) -> void:
+		if index < 0 or index >= season_select.item_count:
+			return
+		selected_season[0] = int(season_select.get_item_metadata(index))
+		selected_codes.clear()
+		for code_prod: int in _get_existing_codes(program, selected_season[0]):
+			selected_codes.append(code_prod)
+		refresh_selection.call()
+	)
+
+	new_season_button.pressed.connect(func() -> void:
+		var next_season := _next_season_number(program)
+		selected_season[0] = next_season
+		selected_codes.clear()
+		_populate_season_select(season_select, program, next_season)
+		refresh_selection.call()
+	)
+
+	add_button.pressed.connect(func() -> void:
+		if code_select.item_count <= 0 or code_select.selected < 0:
+			return
+		var code_prod := int(code_select.get_item_metadata(code_select.selected))
+		if code_prod <= 0 or selected_codes.has(code_prod):
+			return
+		selected_codes.append(code_prod)
+		refresh_selection.call()
+	)
 
 	var help := Label.new()
 	help.text = "L'ordre d'ajout devient l'ordre éditorial de la saison. Un code prod sélectionné disparaît du menu jusqu'à ce qu'il soit retiré."
@@ -75,71 +127,17 @@ static func render(
 	save_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	dynamic.add_child(save_button)
 
-	var selected_codes: Array[int] = []
-
-	var rebuild_selected_codes: Callable
-	var refresh_selection: Callable
-
-	rebuild_selected_codes = func() -> void:
-		for child: Node in selected_holder.get_children():
-			selected_holder.remove_child(child)
-			child.queue_free()
-
-		if selected_codes.is_empty():
-			var empty_label := Label.new()
-			empty_label.text = "Aucune unité sélectionnée."
-			selected_holder.add_child(empty_label)
-			return
-
-		for index: int in range(selected_codes.size()):
-			var code_prod: int = selected_codes[index]
-			var row := HBoxContainer.new()
-			row.add_theme_constant_override("separation", 8)
-			selected_holder.add_child(row)
-
-			var label := Label.new()
-			label.text = "Épisode %d → Code prod %d" % [index + 1, code_prod]
-			label.custom_minimum_size = Vector2(280, 36)
-			label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			row.add_child(label)
-
-			var remove_button := Button.new()
-			remove_button.text = "Retirer"
-			remove_button.pressed.connect(func() -> void:
-				selected_codes.erase(code_prod)
-				refresh_selection.call()
-			)
-			row.add_child(remove_button)
-
-	refresh_selection = func() -> void:
-		_refresh_code_dropdown(code_select, program, selected_codes)
-		rebuild_selected_codes.call()
-		add_button.disabled = code_select.item_count <= 0
-
-	add_button.pressed.connect(func() -> void:
-		if code_select.item_count <= 0 or code_select.selected < 0:
-			return
-
-		var code_prod := int(code_select.get_item_metadata(code_select.selected))
-		if code_prod <= 0 or selected_codes.has(code_prod):
-			return
-
-		selected_codes.append(code_prod)
-		refresh_selection.call()
-	)
-
 	save_button.pressed.connect(func() -> void:
 		if selected_codes.is_empty():
 			error_label.text = "Ajoute au moins un code prod."
 			return
-
-		var result: Variant = on_save_season.call(int(season_input.value), selected_codes.duplicate())
+		var result: Variant = on_save_season.call(selected_season[0], selected_codes.duplicate())
 		var error_text := String(result)
 		if not error_text.is_empty():
 			error_label.text = error_text
 			return
-
-		error_label.text = "Saison enregistrée."
+		error_label.text = "Saison %d enregistrée." % selected_season[0]
+		_populate_season_select(season_select, _program_with_local_season(program, selected_season[0], selected_codes), selected_season[0])
 	)
 
 	refresh_selection.call()
@@ -154,41 +152,38 @@ static func clear(content_container: VBoxContainer) -> void:
 		existing.queue_free()
 
 
-static func _add_field(form: GridContainer, label_text: String, control: Control) -> void:
-	var label := Label.new()
-	label.text = label_text
-	label.custom_minimum_size = Vector2(190, 40)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	form.add_child(label)
-	form.add_child(control)
+static func _initial_season_number(program: Dictionary) -> int:
+	var seasons_value: Variant = program.get("seasons", [])
+	if seasons_value is Array and not (seasons_value as Array).is_empty():
+		var first: Variant = (seasons_value as Array)[0]
+		if first is Dictionary:
+			return maxi(int((first as Dictionary).get("number", 1)), 1)
+	return 1
 
 
-static func _refresh_code_dropdown(
-	code_select: OptionButton,
-	program: Dictionary,
-	selected_codes: Array[int]
-) -> void:
-	code_select.clear()
-
-	var units_value: Variant = program.get("units", [])
-	if not units_value is Array:
-		return
-
-	for value: Variant in units_value:
-		if not value is Dictionary:
-			continue
-
-		var unit: Dictionary = value
-		var code_prod: int = int(unit.get("code_prod", 0))
-		var season: int = int(unit.get("season", 0))
-		if code_prod <= 0 or season > 0 or selected_codes.has(code_prod):
-			continue
-
-		code_select.add_item("Code prod %d" % code_prod)
-		code_select.set_item_metadata(code_select.item_count - 1, code_prod)
-
-	if code_select.item_count > 0:
-		code_select.select(0)
+static func _populate_season_select(select: OptionButton, program: Dictionary, selected_number: int) -> void:
+	select.clear()
+	var numbers: Array[int] = []
+	var seasons_value: Variant = program.get("seasons", [])
+	if seasons_value is Array:
+		for value: Variant in seasons_value:
+			if value is Dictionary:
+				var number := int((value as Dictionary).get("number", 0))
+				if number > 0 and not numbers.has(number):
+					numbers.append(number)
+	if numbers.is_empty():
+		numbers.append(1)
+	if selected_number > 0 and not numbers.has(selected_number):
+		numbers.append(selected_number)
+	numbers.sort()
+	var selected_index := 0
+	for number: int in numbers:
+		select.add_item("Saison %d" % number)
+		var item_index := select.item_count - 1
+		select.set_item_metadata(item_index, number)
+		if number == selected_number:
+			selected_index = item_index
+	select.select(selected_index)
 
 
 static func _next_season_number(program: Dictionary) -> int:
@@ -198,7 +193,97 @@ static func _next_season_number(program: Dictionary) -> int:
 		for value: Variant in seasons_value:
 			if value is Dictionary:
 				max_number = maxi(max_number, int((value as Dictionary).get("number", 0)))
-	return max_number + 1
+	return max_number + 1 if max_number > 0 else 2
+
+
+static func _get_existing_codes(program: Dictionary, season_number: int) -> Array[int]:
+	var result: Array[int] = []
+	var seasons_value: Variant = program.get("seasons", [])
+	if seasons_value is Array:
+		for value: Variant in seasons_value:
+			if not value is Dictionary:
+				continue
+			var season: Dictionary = value
+			if int(season.get("number", 0)) != season_number:
+				continue
+			var codes_value: Variant = season.get("unit_codes", [])
+			if codes_value is Array:
+				for code_value: Variant in codes_value:
+					var code := int(code_value)
+					if code > 0:
+						result.append(code)
+			break
+	return result
+
+
+static func _refresh_code_dropdown(select: OptionButton, program: Dictionary, selected_codes: Array[int]) -> void:
+	select.clear()
+	var blocked: Dictionary = {}
+	var units_value: Variant = program.get("units", [])
+	if units_value is Array:
+		for value: Variant in units_value:
+			if not value is Dictionary:
+				continue
+			var unit: Dictionary = value
+			var code_prod := int(unit.get("code_prod", 0))
+			var season := int(unit.get("season", 0))
+			if season > 0 and not selected_codes.has(code_prod):
+				blocked[code_prod] = true
+	if units_value is Array:
+		for value: Variant in units_value:
+			if not value is Dictionary:
+				continue
+			var code_prod := int((value as Dictionary).get("code_prod", 0))
+			if code_prod <= 0 or selected_codes.has(code_prod) or blocked.has(code_prod):
+				continue
+			select.add_item("Code prod %d" % code_prod)
+			select.set_item_metadata(select.item_count - 1, code_prod)
+
+
+static func _rebuild_selected_codes(holder: VBoxContainer, selected_codes: Array[int], refresh_selection: Callable) -> void:
+	for child: Node in holder.get_children():
+		holder.remove_child(child)
+		child.queue_free()
+	if selected_codes.is_empty():
+		var empty := Label.new()
+		empty.text = "Aucune unité sélectionnée."
+		holder.add_child(empty)
+		return
+	for index: int in range(selected_codes.size()):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		holder.add_child(row)
+		var label := Label.new()
+		label.text = "Épisode %d → Code prod %d" % [index + 1, selected_codes[index]]
+		label.custom_minimum_size = Vector2(320, 36)
+		row.add_child(label)
+		var remove_button := Button.new()
+		remove_button.text = "Retirer"
+		var code_to_remove := selected_codes[index]
+		remove_button.pressed.connect(func() -> void:
+			selected_codes.erase(code_to_remove)
+			refresh_selection.call()
+		)
+		row.add_child(remove_button)
+
+
+static func _program_with_local_season(program: Dictionary, season_number: int, selected_codes: Array[int]) -> Dictionary:
+	var copy := program.duplicate(true)
+	var seasons: Array = []
+	var seasons_value: Variant = copy.get("seasons", [])
+	if seasons_value is Array:
+		seasons = (seasons_value as Array).duplicate(true)
+	var replaced := false
+	for index: int in range(seasons.size()):
+		var value: Variant = seasons[index]
+		if value is Dictionary and int((value as Dictionary).get("number", 0)) == season_number:
+			seasons[index] = {"number": season_number, "unit_codes": selected_codes.duplicate()}
+			replaced = true
+			break
+	if not replaced:
+		seasons.append({"number": season_number, "unit_codes": selected_codes.duplicate()})
+	copy["seasons"] = seasons
+	return copy
 
 
 static func _build_current_seasons(parent: VBoxContainer, program: Dictionary) -> void:
@@ -206,14 +291,12 @@ static func _build_current_seasons(parent: VBoxContainer, program: Dictionary) -
 	title.text = "Saisons actuelles"
 	title.add_theme_font_size_override("font_size", 18)
 	parent.add_child(title)
-
 	var seasons_value: Variant = program.get("seasons", [])
 	if not seasons_value is Array or (seasons_value as Array).is_empty():
 		var empty := Label.new()
 		empty.text = "Aucun découpage en saison."
 		parent.add_child(empty)
 		return
-
 	for value: Variant in seasons_value:
 		if not value is Dictionary:
 			continue
@@ -234,7 +317,6 @@ static func _build_units_table(parent: VBoxContainer, program: Dictionary) -> vo
 	title.text = "Unités"
 	title.add_theme_font_size_override("font_size", 18)
 	parent.add_child(title)
-
 	var table := GridContainer.new()
 	table.columns = 2
 	table.add_theme_constant_override("h_separation", 0)
@@ -242,7 +324,6 @@ static func _build_units_table(parent: VBoxContainer, program: Dictionary) -> vo
 	parent.add_child(table)
 	_add_cell(table, "Code prod", 0, true)
 	_add_cell(table, "Classement éditorial", 1, true)
-
 	var units_value: Variant = program.get("units", [])
 	if not units_value is Array:
 		return
