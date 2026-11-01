@@ -38,6 +38,27 @@ static func show_new_game(
 	player_name_input.grab_focus()
 
 
+static func ensure_continue_button(home_panel: Control, on_continue: Callable) -> Button:
+	var vbox: VBoxContainer = home_panel.get_node("Margin/VBox") as VBoxContainer
+	var existing: Button = vbox.get_node_or_null("ContinueGameButton") as Button
+	if existing != null:
+		return existing
+
+	var continue_button: Button = Button.new()
+	continue_button.name = "ContinueGameButton"
+	continue_button.text = "Continuer"
+	continue_button.custom_minimum_size = Vector2(0, 52)
+	continue_button.visible = false
+	continue_button.pressed.connect(on_continue)
+	vbox.add_child(continue_button)
+
+	var new_game_button: Button = vbox.get_node_or_null("NewGameMenuButton") as Button
+	if new_game_button != null:
+		vbox.move_child(continue_button, new_game_button.get_index())
+
+	return continue_button
+
+
 static func ensure_quit_button(home_panel: Control, on_quit: Callable) -> Button:
 	var vbox: VBoxContainer = home_panel.get_node("Margin/VBox") as VBoxContainer
 	var existing: Button = vbox.get_node_or_null("QuitGameButton") as Button
