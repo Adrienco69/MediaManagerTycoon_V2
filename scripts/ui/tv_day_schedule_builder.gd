@@ -25,7 +25,8 @@ static func build(
 	programs: Array[Dictionary],
 	on_program_selected: Callable = Callable(),
 	day_buttons_parent: HBoxContainer = null,
-	time_range_id: String = ""
+	time_range_id: String = "",
+	on_schedule_updated: Callable = Callable()
 ) -> void:
 	var day_buttons: Array[Button] = []
 	var day_row: HBoxContainer = day_buttons_parent
@@ -72,7 +73,8 @@ static func build(
 				schedule,
 				scroll,
 				on_program_selected,
-				time_range_id
+				time_range_id,
+				on_schedule_updated
 			)
 		)
 
@@ -87,7 +89,8 @@ static func build(
 		schedule,
 		scroll,
 		on_program_selected,
-		time_range_id
+		time_range_id,
+		on_schedule_updated
 	)
 
 
@@ -102,7 +105,8 @@ static func _show_day(
 	schedule: VBoxContainer,
 	scroll: ScrollContainer,
 	on_program_selected: Callable,
-	time_range_id: String
+	time_range_id: String,
+	on_schedule_updated: Callable
 ) -> void:
 	for index: int in range(day_buttons.size()):
 		day_buttons[index].disabled = index == day_index
@@ -136,8 +140,11 @@ static func _show_day(
 				schedule,
 				scroll,
 				on_program_selected,
-				time_range_id
+				time_range_id,
+				on_schedule_updated
 			)
+			if on_schedule_updated.is_valid():
+				on_schedule_updated.call()
 
 		for slot_index: int in range(start_slot, end_slot):
 			var slot_entry: Dictionary = player_slots[slot_index]
@@ -153,6 +160,29 @@ static func _show_day(
 				refresh_current_day
 			)
 
+		scroll.scroll_vertical = 0
+		return
+
+	if _is_player_channel(channel):
+		var player_guide_slots: Array[Dictionary] = GameState.get_player_day_schedule(
+			channel,
+			week_number,
+			day_index
+		)
+		for slot_index: int in range(48):
+			var slot_entry: Dictionary = player_guide_slots[slot_index]
+			if String(slot_entry.get("kind", "")) == "continuation":
+				continue
+			_add_player_guide_slot(
+				schedule,
+				slot_index,
+				slot_entry,
+				programs,
+				channel,
+				week_number,
+				day_index,
+				on_program_selected
+			)
 		scroll.scroll_vertical = 0
 		return
 
@@ -245,6 +275,63 @@ static func _add_editable_slot(
 	row.add_child(slot_button)
 
 
+static func _add_player_guide_slot(
+	parent: VBoxContainer,
+	slot_index: int,
+	slot_entry: Dictionary,
+	programs: Array[Dictionary],
+	channel: Dictionary,
+	week_number: int,
+	day_index: int,
+	on_program_selected: Callable
+) -> void:
+	var row: HBoxContainer = _create_time_row(parent, slot_index)
+	if slot_entry.is_empty():
+		var empty_label: Label = Label.new()
+		empty_label.text = "Vide"
+		empty_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(empty_label)
+		return
+
+	var program: Dictionary = _find_program_by_id_or_name(
+		programs,
+		String(slot_entry.get("program_id", "")),
+		String(slot_entry.get("program_name", ""))
+	)
+	if program.is_empty():
+		var fallback_label: Label = Label.new()
+		var fallback_name: String = String(slot_entry.get("program_name", "Programme"))
+		var fallback_duration: int = int(slot_entry.get("duration_minutes", 0))
+		fallback_label.text = "%s | %d min" % [fallback_name, fallback_duration]
+		fallback_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		fallback_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(fallback_label)
+		return
+
+	var program_button: Button = Button.new()
+	program_button.text = ZapProgramLabelScript.build(
+		program,
+		channel,
+		week_number,
+		day_index,
+		slot_index
+	)
+	program_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	program_button.flat = true
+	program_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	program_button.custom_minimum_size = Vector2(0, 38)
+	program_button.disabled = not on_program_selected.is_valid()
+
+	if on_program_selected.is_valid():
+		var captured_program: Dictionary = program.duplicate(true)
+		program_button.pressed.connect(func() -> void:
+			on_program_selected.call(captured_program)
+		)
+
+	row.add_child(program_button)
+
+
 static func _add_guide_slot(
 	parent: VBoxContainer,
 	slot_index: int,
@@ -324,6 +411,13 @@ static func _get_player_slot_text(slot_entry: Dictionary) -> String:
 	if String(slot_entry.get("kind", "")) == "continuation":
 		return "↳ %s" % program_name
 	return "%s (%d min)" % [program_name, duration_minutes]
+
+
+static func _is_player_channel(channel: Dictionary) -> bool:
+	var player_channel: Dictionary = GameState.get_first_channel()
+	if player_channel.is_empty():
+		return false
+	return int(channel.get("mmtn_number", 0)) == int(player_channel.get("mmtn_number", -1))
 
 
 static func _find_program_by_name(programs: Array[Dictionary], program_name: String) -> Dictionary:
