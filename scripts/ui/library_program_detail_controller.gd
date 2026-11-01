@@ -6,13 +6,15 @@ const EpisodeTableScript = preload("res://scripts/ui/library_program_episode_tab
 
 const DYNAMIC_NODE_NAME: String = "LibraryProgramDetailDynamic"
 const INFO_WIDTHS: Array[float] = [230.0, 420.0]
+const NAV_BUTTON_HEIGHT: float = 40.0
 
 
 static func render(
 	content_container: VBoxContainer,
 	page_description: Label,
 	program: Dictionary,
-	on_back: Callable
+	on_back: Callable,
+	back_button_text: String = "← Retour à la Bibliothèque"
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -23,25 +25,26 @@ static func render(
 	dynamic.add_theme_constant_override("separation", 14)
 	content_container.add_child(dynamic)
 
+	var nav_row: HBoxContainer = HBoxContainer.new()
+	nav_row.add_theme_constant_override("separation", 8)
+	dynamic.add_child(nav_row)
+
 	var back_button: Button = Button.new()
-	back_button.text = "← Retour à la Bibliothèque"
+	back_button.text = back_button_text
+	back_button.custom_minimum_size = Vector2(0, NAV_BUTTON_HEIGHT)
 	back_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	back_button.pressed.connect(on_back)
-	dynamic.add_child(back_button)
-
-	var tabs: HBoxContainer = HBoxContainer.new()
-	tabs.add_theme_constant_override("separation", 8)
-	dynamic.add_child(tabs)
+	nav_row.add_child(back_button)
 
 	var info_button: Button = Button.new()
 	info_button.text = "Infos pratiques"
-	info_button.custom_minimum_size = Vector2(180, 40)
-	tabs.add_child(info_button)
+	info_button.custom_minimum_size = Vector2(180, NAV_BUTTON_HEIGHT)
+	nav_row.add_child(info_button)
 
 	var episodes_button: Button = Button.new()
 	episodes_button.text = "Épisodes & diffusions"
-	episodes_button.custom_minimum_size = Vector2(210, 40)
-	tabs.add_child(episodes_button)
+	episodes_button.custom_minimum_size = Vector2(210, NAV_BUTTON_HEIGHT)
+	nav_row.add_child(episodes_button)
 
 	var tab_content: VBoxContainer = VBoxContainer.new()
 	tab_content.add_theme_constant_override("separation", 12)
