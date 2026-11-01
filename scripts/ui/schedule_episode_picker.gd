@@ -455,10 +455,9 @@ static func _auto_schedule_episodes(
 		var cursor_absolute_slot: int = (period_absolute_day * SLOTS_PER_DAY) + start_slot
 
 		for _episode_in_period: int in range(maxi(episodes_per_period, 1)):
-			var global_episode: int = start_global_episode + scheduled_count
-			if global_episode > episode_count:
-				stop_reason = "Aucun épisode disponible pour poursuivre l'automatisation."
-				break
+			var sequence_index: int = (start_global_episode - 1) + scheduled_count
+			var global_episode: int = (sequence_index % episode_count) + 1
+			var is_rerun_cycle: bool = sequence_index >= episode_count
 
 			var target_absolute_day: int = int(cursor_absolute_slot / SLOTS_PER_DAY)
 			if target_absolute_day >= DAYS_PER_YEAR:
@@ -474,10 +473,11 @@ static func _auto_schedule_episodes(
 				global_episode
 			)
 			if episode_data.is_empty():
-				stop_reason = "Aucun épisode disponible pour poursuivre l'automatisation."
+				stop_reason = "Impossible de retrouver l'épisode à programmer."
 				break
 			episode_data["automation_id"] = automation_id
 			episode_data["automation_frequency"] = frequency_name
+			episode_data["automation_rerun"] = is_rerun_cycle
 
 			var placed: bool = false
 			if first_write and replace_first:
