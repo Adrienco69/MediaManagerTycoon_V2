@@ -94,7 +94,7 @@ static func build(
 			button = Button.new()
 
 		button.text = "%s | %s | %d min" % [
-			_get_format_name(program),
+			_get_compact_format_name(program),
 			String(program.get("name", "Programme")),
 			int(program.get("duration_minutes", 0))
 		]
@@ -126,3 +126,14 @@ static func _get_format_name(program: Dictionary) -> String:
 	if format_name.is_empty():
 		return "Programme"
 	return format_name
+
+
+static func _get_compact_format_name(program: Dictionary) -> String:
+	var format_name: String = _get_format_name(program)
+	match format_name:
+		"Divertissement":
+			return "Div..."
+		"Documentaire":
+			return "Docu"
+		_:
+			return format_name
