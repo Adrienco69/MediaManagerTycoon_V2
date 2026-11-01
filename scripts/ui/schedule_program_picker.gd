@@ -68,17 +68,6 @@ static func open(
 	var separator: HSeparator = HSeparator.new()
 	content.add_child(separator)
 
-	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, 360)
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(scroll)
-
-	var program_list: VBoxContainer = VBoxContainer.new()
-	program_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	program_list.add_theme_constant_override("separation", 6)
-	scroll.add_child(program_list)
-
 	var sorted_programs: Array[Dictionary] = []
 	for program: Dictionary in programs:
 		sorted_programs.append(program)
@@ -90,6 +79,60 @@ static func open(
 		return type_a < type_b
 	)
 
+	var filter_scroll: ScrollContainer = ScrollContainer.new()
+	filter_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	filter_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	filter_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_child(filter_scroll)
+
+	var filter_row: HBoxContainer = HBoxContainer.new()
+	filter_row.add_theme_constant_override("separation", 6)
+	filter_scroll.add_child(filter_row)
+
+	var filter_group: ButtonGroup = ButtonGroup.new()
+	filter_group.allow_unpress = false
+	var filter_buttons: Array[Button] = []
+	var filter_values: Array[String] = []
+
+	var all_button: Button = Button.new()
+	all_button.text = "Tous"
+	all_button.toggle_mode = true
+	all_button.button_group = filter_group
+	all_button.button_pressed = true
+	filter_row.add_child(all_button)
+	filter_buttons.append(all_button)
+	filter_values.append("")
+
+	var format_names: Array[String] = []
+	for program: Dictionary in sorted_programs:
+		var format_name: String = _get_format_name(program)
+		if not format_names.has(format_name):
+			format_names.append(format_name)
+	format_names.sort_custom(func(a: String, b: String) -> bool:
+		return a.to_lower() < b.to_lower()
+	)
+
+	for format_name: String in format_names:
+		var filter_button: Button = Button.new()
+		filter_button.text = format_name
+		filter_button.toggle_mode = true
+		filter_button.button_group = filter_group
+		filter_row.add_child(filter_button)
+		filter_buttons.append(filter_button)
+		filter_values.append(format_name)
+
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 360)
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(scroll)
+
+	var program_list: VBoxContainer = VBoxContainer.new()
+	program_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	program_list.add_theme_constant_override("separation", 6)
+	scroll.add_child(program_list)
+
+	var program_entries: Array[Dictionary] = []
 	var available_count: int = 0
 	for program: Dictionary in sorted_programs:
 		var compatible: bool = GameState.can_schedule_program(
@@ -119,6 +162,7 @@ static func open(
 		ScheduleWeekUsageScript.apply_highlight(program_button, already_scheduled)
 		program_button.disabled = not compatible
 		program_list.add_child(program_button)
+		program_entries.append({"button": program_button, "format": format_name})
 
 		if not compatible:
 			program_button.tooltip_text = "Ce programme ne peut pas être placé à cette heure."
@@ -155,6 +199,17 @@ static func open(
 				refresh_callback.call()
 		)
 
+	for filter_index: int in range(filter_buttons.size()):
+		var filter_button: Button = filter_buttons[filter_index]
+		var filter_value: String = filter_values[filter_index]
+		filter_button.pressed.connect(func() -> void:
+			for entry: Dictionary in program_entries:
+				var entry_button: Button = entry.get("button") as Button
+				if entry_button == null:
+					continue
+				entry_button.visible = filter_value.is_empty() or String(entry.get("format", "")) == filter_value
+		)
+
 	if programs.is_empty():
 		_add_empty_message(program_list, "Aucun programme disponible.")
 	elif available_count == 0:
@@ -173,7 +228,7 @@ static func open(
 		if is_instance_valid(popup):
 			popup.queue_free()
 	)
-	popup.popup_centered(Vector2i(700, 520))
+	popup.popup_centered(Vector2i(700, 560))
 
 
 static func _add_empty_message(parent: VBoxContainer, text: String) -> void:
