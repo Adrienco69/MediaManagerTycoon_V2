@@ -44,7 +44,7 @@ static func open(
 	popup.add_child(margin)
 
 	var content: VBoxContainer = VBoxContainer.new()
-	content.custom_minimum_size = Vector2(500, 0)
+	content.custom_minimum_size = Vector2(640, 0)
 	content.add_theme_constant_override("separation", 10)
 	margin.add_child(content)
 
@@ -95,11 +95,16 @@ static func open(
 		)
 
 		var program_button: Button = Button.new()
-		program_button.text = "%s (%d min)" % [
+		var format_name: String = String(program.get("format", "Programme")).strip_edges()
+		if format_name.is_empty():
+			format_name = "Programme"
+		program_button.text = "%s (%d min) | %s" % [
 			String(program.get("name", "Programme")),
-			int(program.get("duration_minutes", 0))
+			int(program.get("duration_minutes", 0)),
+			format_name
 		]
 		program_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		program_button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		program_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		program_button.custom_minimum_size = Vector2(0, 40)
 		ScheduleWeekUsageScript.apply_highlight(program_button, already_scheduled)
@@ -159,7 +164,7 @@ static func open(
 		if is_instance_valid(popup):
 			popup.queue_free()
 	)
-	popup.popup_centered(Vector2i(560, 520))
+	popup.popup_centered(Vector2i(700, 520))
 
 
 static func _add_empty_message(parent: VBoxContainer, text: String) -> void:
