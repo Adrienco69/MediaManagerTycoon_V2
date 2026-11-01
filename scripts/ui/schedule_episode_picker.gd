@@ -257,6 +257,14 @@ static func _auto_schedule_episodes(
 	)
 	var scheduled_count: int = 0
 	var stop_reason: String = ""
+	var frequency_name: String = "daily" if frequency_id == FREQUENCY_DAILY else "weekly"
+	var automation_id: String = "%s_%d_%d_%d_%d" % [
+		String(program.get("id", program.get("name", "program"))),
+		start_week,
+		start_day,
+		slot_index,
+		Time.get_ticks_msec()
+	]
 
 	for offset: int in range(quantity):
 		var target_week: int = start_week
@@ -283,6 +291,8 @@ static func _auto_schedule_episodes(
 		if episode_data.is_empty():
 			stop_reason = "Aucun épisode disponible pour poursuivre l'automatisation."
 			break
+		episode_data["automation_id"] = automation_id
+		episode_data["automation_frequency"] = frequency_name
 
 		var placed: bool = false
 		if offset == 0 and replace_first:
