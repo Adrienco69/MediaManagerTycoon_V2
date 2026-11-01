@@ -1,6 +1,8 @@
 class_name ProgramCatalogPanel
 extends RefCounted
 
+const DraggableProgramButtonScript = preload("res://scripts/ui/draggable_program_button.gd")
+
 
 static func build(
 	parent: Control,
@@ -41,7 +43,7 @@ static func build(
 
 	var hint: Label = Label.new()
 	if editable:
-		hint.text = "Catalogue du groupe. Cliquez sur un titre pour voir sa fiche. Le glisser-déposer sera branché ensuite."
+		hint.text = "Glissez un programme sur une case de la grille. Cliquez sur son titre pour voir sa fiche."
 	else:
 		hint.text = "Catalogue non modifiable. Cliquez sur un titre pour voir sa fiche."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -69,7 +71,14 @@ static func build(
 	scroll.add_child(list)
 
 	for program: Dictionary in programs:
-		var button: Button = Button.new()
+		var button: Button
+		if editable:
+			var draggable_button: DraggableProgramButton = DraggableProgramButtonScript.new()
+			draggable_button.setup(program)
+			button = draggable_button
+		else:
+			button = Button.new()
+
 		button.text = "%s (%d min)" % [
 			String(program.get("name", "")),
 			int(program.get("duration_minutes", 0))
@@ -77,7 +86,7 @@ static func build(
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.custom_minimum_size = Vector2(0, 38)
-		button.disabled = not on_program_selected.is_valid()
+		button.disabled = not on_program_selected.is_valid() and not editable
 
 		if on_program_selected.is_valid():
 			var captured_program: Dictionary = program.duplicate(true)
