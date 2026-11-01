@@ -2,13 +2,16 @@ class_name ProgramCatalogPanel
 extends RefCounted
 
 const DraggableProgramButtonScript = preload("res://scripts/ui/draggable_program_button.gd")
+const ScheduleWeekUsageScript = preload("res://scripts/ui/schedule_week_usage.gd")
 
 
 static func build(
 	parent: Control,
 	editable: bool,
 	programs: Array[Dictionary],
-	on_program_selected: Callable = Callable()
+	on_program_selected: Callable = Callable(),
+	channel: Dictionary = {},
+	week_number: int = 1
 ) -> void:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -43,7 +46,7 @@ static func build(
 
 	var hint: Label = Label.new()
 	if editable:
-		hint.text = "Cliquez sur une case horaire pour choisir un programme, ou glissez un titre sur la grille. Cliquez sur un titre pour voir sa fiche."
+		hint.text = "Cliquez sur une case horaire pour choisir un programme, ou glissez un titre sur la grille. Orange = déjà programmé dans cette semaine."
 	else:
 		hint.text = "Catalogue non modifiable. Cliquez sur un titre pour voir sa fiche."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -87,6 +90,14 @@ static func build(
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.custom_minimum_size = Vector2(0, 38)
 		button.disabled = not on_program_selected.is_valid() and not editable
+
+		if editable and not channel.is_empty():
+			var already_scheduled: bool = ScheduleWeekUsageScript.is_program_scheduled(
+				channel,
+				week_number,
+				program
+			)
+			ScheduleWeekUsageScript.apply_highlight(button, already_scheduled)
 
 		if on_program_selected.is_valid():
 			var captured_program: Dictionary = program.duplicate(true)
