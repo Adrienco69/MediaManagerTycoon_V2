@@ -24,52 +24,31 @@ func configure(
 	day_index = new_day_index
 	slot_index = new_slot_index
 	refresh_callback = new_refresh_callback
-
 	if not pressed.is_connected(_on_pressed):
 		pressed.connect(_on_pressed)
-
 	tooltip_text = "Cliquez pour programmer ce créneau, glissez-déposez un programme, ou déposez la poubelle sur une diffusion."
 
 
 func _on_pressed() -> void:
-	var day_slots: Array[Dictionary] = GameState.get_player_day_schedule(
-		channel,
-		week_number,
-		day_index
-	)
+	var day_slots: Array[Dictionary] = GameState.get_player_day_schedule(channel, week_number, day_index)
 	if slot_index < 0 or slot_index >= day_slots.size():
 		return
-
 	var slot_entry: Dictionary = day_slots[slot_index]
 	if slot_entry.is_empty():
 		ScheduleProgramPickerScript.open(
-			self,
-			channel,
-			week_number,
-			day_index,
-			slot_index,
-			GameState.get_group_programs(),
-			refresh_callback
+			self, channel, week_number, day_index, slot_index,
+			GameState.get_group_programs(), refresh_callback
 		)
 		return
-
 	if String(slot_entry.get("kind", "")) != "start":
 		return
 	if int(slot_entry.get("episode_global", 0)) > 0:
 		return
-
 	var program: Dictionary = _get_program_for_slot(slot_entry)
 	if program.is_empty() or not ScheduleEpisodeHelperScript.requires_episode_choice(program):
 		return
-
 	ScheduleEpisodePickerScript.open(
-		self,
-		channel,
-		week_number,
-		day_index,
-		slot_index,
-		program,
-		refresh_callback
+		self, channel, week_number, day_index, slot_index, program, refresh_callback
 	)
 
 
@@ -77,7 +56,6 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 	var source_data: Dictionary = _get_source_drag_data()
 	if source_data.is_empty():
 		return null
-
 	var preview: Label = Label.new()
 	var program: Dictionary = source_data.get("program", {})
 	preview.text = "Déplacer : %s" % String(program.get("name", "Programme"))
@@ -89,44 +67,31 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 	if not data is Dictionary:
 		return false
-
 	var drag_data: Dictionary = data as Dictionary
 	var drag_type: String = String(drag_data.get("type", ""))
-
 	if drag_type == "schedule_trash":
 		return not _get_source_drag_data().is_empty()
-
 	if drag_type != "program" and drag_type != "scheduled_program":
 		return false
-
 	var program_value: Variant = drag_data.get("program", {})
 	if not program_value is Dictionary:
 		return false
-
 	return GameState.can_fit_schedule_program(
-		channel,
-		week_number,
-		day_index,
-		slot_index,
-		program_value as Dictionary
+		channel, week_number, day_index, slot_index, program_value as Dictionary
 	)
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	if not data is Dictionary:
 		return
-
 	var drag_data: Dictionary = (data as Dictionary).duplicate(true)
 	var drag_type: String = String(drag_data.get("type", ""))
-
 	if drag_type == "schedule_trash":
 		_open_delete_confirmation()
 		return
-
 	var program_value: Variant = drag_data.get("program", {})
 	if not program_value is Dictionary:
 		return
-
 	if drag_type == "scheduled_program":
 		if (
 			int(drag_data.get("source_week", -1)) == week_number
@@ -145,18 +110,11 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 		ignored_start = int(drag_data.get("source_slot", -1))
 
 	var conflicts: Array[Dictionary] = GameState.get_schedule_conflicts(
-		channel,
-		week_number,
-		day_index,
-		slot_index,
-		program,
-		ignored_start
+		channel, week_number, day_index, slot_index, program, ignored_start
 	)
-
 	if conflicts.is_empty():
 		_perform_drop(drag_data, false)
 		return
-
 	_open_replace_confirmation(drag_data, conflicts)
 
 
@@ -173,10 +131,7 @@ func _perform_drop(drag_data: Dictionary, replace_conflicts: bool) -> void:
 			int(drag_data.get("source_week", week_number)),
 			int(drag_data.get("source_day", day_index)),
 			int(drag_data.get("source_slot", slot_index)),
-			week_number,
-			day_index,
-			slot_index,
-			replace_conflicts
+			week_number, day_index, slot_index, replace_conflicts
 		)
 		if moved and refresh_callback.is_valid():
 			refresh_callback.call()
@@ -184,35 +139,19 @@ func _perform_drop(drag_data: Dictionary, replace_conflicts: bool) -> void:
 
 	if ScheduleEpisodeHelperScript.requires_episode_choice(program):
 		ScheduleEpisodePickerScript.open(
-			self,
-			channel,
-			week_number,
-			day_index,
-			slot_index,
-			program,
-			refresh_callback,
-			replace_conflicts
+			self, channel, week_number, day_index, slot_index,
+			program, refresh_callback, replace_conflicts
 		)
 		return
 
 	var placed: bool = false
 	if replace_conflicts:
 		placed = GameState.replace_scheduled_program(
-			channel,
-			week_number,
-			day_index,
-			slot_index,
-			program,
-			{}
+			channel, week_number, day_index, slot_index, program, {}
 		)
 	else:
 		placed = GameState.schedule_program(
-			channel,
-			week_number,
-			day_index,
-			slot_index,
-			program,
-			{}
+			channel, week_number, day_index, slot_index, program, {}
 		)
 	if placed and refresh_callback.is_valid():
 		refresh_callback.call()
@@ -239,7 +178,6 @@ func _open_replace_confirmation(
 	dialog.ok_button_text = "Remplacer"
 	dialog.cancel_button_text = "Annuler"
 	add_child(dialog)
-
 	dialog.confirmed.connect(func() -> void:
 		_perform_drop(drag_data, true)
 		if is_instance_valid(dialog):
@@ -256,12 +194,10 @@ func _open_delete_confirmation() -> void:
 	var source_data: Dictionary = _get_source_drag_data()
 	if source_data.is_empty():
 		return
-
 	var program_value: Variant = source_data.get("program", {})
 	var program_name: String = "cette diffusion"
 	if program_value is Dictionary:
 		program_name = String((program_value as Dictionary).get("name", program_name))
-
 	var automation_id: String = String(source_data.get("automation_id", ""))
 	var is_automatic: bool = not automation_id.is_empty()
 
@@ -274,7 +210,6 @@ func _open_delete_confirmation() -> void:
 	dialog.ok_button_text = "Tout supprimer" if is_automatic else "Supprimer"
 	dialog.cancel_button_text = "Annuler"
 	add_child(dialog)
-
 	dialog.confirmed.connect(func() -> void:
 		var removed: bool = false
 		if is_automatic:
@@ -282,8 +217,8 @@ func _open_delete_confirmation() -> void:
 		else:
 			removed = GameState.remove_scheduled_program(
 				channel,
-				week_number,
-				day_index,
+				int(source_data.get("source_week", week_number)),
+				int(source_data.get("source_day", day_index)),
 				int(source_data.get("source_slot", slot_index))
 			)
 		if removed and refresh_callback.is_valid():
@@ -301,14 +236,11 @@ func _open_delete_confirmation() -> void:
 func _remove_automatic_group(automation_id: String) -> bool:
 	if automation_id.is_empty():
 		return false
-
 	var removed_any: bool = false
 	for target_week: int in range(1, 53):
 		for target_day: int in range(7):
 			var day_slots: Array[Dictionary] = GameState.get_player_day_schedule(
-				channel,
-				target_week,
-				target_day
+				channel, target_week, target_day
 			)
 			for target_slot: int in range(day_slots.size()):
 				var entry: Dictionary = day_slots[target_slot]
@@ -319,33 +251,29 @@ func _remove_automatic_group(automation_id: String) -> bool:
 				if String(entry.get("automation_id", "")) != automation_id:
 					continue
 				if GameState.remove_scheduled_program(
-					channel,
-					target_week,
-					target_day,
-					target_slot
+					channel, target_week, target_day, target_slot
 				):
 					removed_any = true
 	return removed_any
 
 
 func _get_source_drag_data() -> Dictionary:
-	var day_slots: Array[Dictionary] = GameState.get_player_day_schedule(
-		channel,
-		week_number,
-		day_index
-	)
+	var day_slots: Array[Dictionary] = GameState.get_player_day_schedule(channel, week_number, day_index)
 	if slot_index < 0 or slot_index >= day_slots.size():
 		return {}
-
 	var entry: Dictionary = day_slots[slot_index]
 	if entry.is_empty():
 		return {}
-	var source_start: int = int(entry.get("start_slot", slot_index))
-	if source_start < 0 or source_start >= day_slots.size():
+
+	var source_week: int = int(entry.get("origin_week", week_number))
+	var source_day: int = int(entry.get("origin_day", day_index))
+	var source_slot: int = int(entry.get("origin_slot", entry.get("start_slot", slot_index)))
+	var origin_slots: Array[Dictionary] = GameState.get_player_day_schedule(channel, source_week, source_day)
+	if source_slot < 0 or source_slot >= origin_slots.size():
 		return {}
-	var start_entry: Dictionary = day_slots[source_start]
+	var start_entry: Dictionary = origin_slots[source_slot]
 	if start_entry.is_empty():
-		return {}
+		start_entry = entry
 
 	var program: Dictionary = _get_program_for_slot(start_entry)
 	if program.is_empty():
@@ -367,9 +295,9 @@ func _get_source_drag_data() -> Dictionary:
 		},
 		"automation_id": String(start_entry.get("automation_id", "")),
 		"automation_frequency": String(start_entry.get("automation_frequency", "")),
-		"source_week": week_number,
-		"source_day": day_index,
-		"source_slot": source_start
+		"source_week": source_week,
+		"source_day": source_day,
+		"source_slot": source_slot
 	}
 
 
@@ -379,7 +307,6 @@ func _get_program_for_slot(slot_entry: Dictionary) -> Dictionary:
 		var program_by_id: Dictionary = GameState.get_program(program_id)
 		if not program_by_id.is_empty():
 			return program_by_id
-
 	var program_name: String = String(slot_entry.get("program_name", ""))
 	for program: Dictionary in GameState.get_group_programs():
 		if String(program.get("name", "")) == program_name:
