@@ -2,18 +2,18 @@ class_name ProductionPageController
 extends RefCounted
 
 const DYNAMIC_NODE_NAME: String = "ProductionDynamic"
-const COLUMN_WIDTHS: Array[float] = [300.0, 180.0, 120.0, 150.0, 190.0]
+const COLUMN_WIDTHS: Array[float] = [320.0, 190.0, 170.0, 220.0]
 
 
 static func render(
 	content_container: VBoxContainer,
 	page_description: Label,
-	programs: Array[Dictionary],
+	active_productions: Array[Dictionary],
 	on_create_production: Callable
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	page_description.text = "Programmes appartenant au groupe et productions en cours."
+	page_description.text = "Créez de nouvelles productions et suivez uniquement celles qui sont en cours."
 
 	var dynamic: VBoxContainer = VBoxContainer.new()
 	dynamic.name = DYNAMIC_NODE_NAME
@@ -21,7 +21,7 @@ static func render(
 	content_container.add_child(dynamic)
 
 	var actions: HBoxContainer = HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 8)
+	actions.add_theme_constant_override("separation", 10)
 	dynamic.add_child(actions)
 
 	var create_button: Button = Button.new()
@@ -31,11 +31,11 @@ static func render(
 	actions.add_child(create_button)
 
 	var info_label: Label = Label.new()
-	info_label.text = "%d programme(s) dans le catalogue du groupe" % programs.size()
+	info_label.text = "%d production(s) en cours" % active_productions.size()
 	info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	actions.add_child(info_label)
 
-	_build_table(dynamic, programs)
+	_build_table(dynamic, active_productions)
 
 
 static func clear(content_container: VBoxContainer) -> void:
@@ -45,41 +45,36 @@ static func clear(content_container: VBoxContainer) -> void:
 		existing.queue_free()
 
 
-static func _build_table(parent: VBoxContainer, programs: Array[Dictionary]) -> void:
-	if programs.is_empty():
+static func _build_table(parent: VBoxContainer, productions: Array[Dictionary]) -> void:
+	if productions.is_empty():
 		var empty_label: Label = Label.new()
-		empty_label.text = "Aucun programme dans le catalogue du groupe."
+		empty_label.text = "Aucune production en cours."
 		parent.add_child(empty_label)
 		return
 
 	var table: GridContainer = GridContainer.new()
-	table.columns = 5
+	table.columns = 4
 	table.add_theme_constant_override("h_separation", 0)
 	table.add_theme_constant_override("v_separation", 0)
 	parent.add_child(table)
 
 	_add_cell(table, "Programme", 0, true)
 	_add_cell(table, "Format", 1, true)
-	_add_cell(table, "Durée", 2, true)
-	_add_cell(table, "Épisodes", 3, true)
-	_add_cell(table, "État", 4, true)
+	_add_cell(table, "En production", 2, true)
+	_add_cell(table, "État", 3, true)
 
-	for program: Dictionary in programs:
+	for program: Dictionary in productions:
 		_add_cell(table, String(program.get("name", "")), 0, false)
 		_add_cell(table, String(program.get("format", "")), 1, false)
-		_add_cell(table, "%d min" % int(program.get("duration_minutes", 0)), 2, false)
-		_add_cell(table, _get_episode_text(program), 3, false)
-		_add_cell(table, String(program.get("status", "Disponible")), 4, false)
+		_add_cell(table, _get_current_production_text(program), 2, false)
+		_add_cell(table, String(program.get("status", "Production en cours")), 3, false)
 
 
-static func _get_episode_text(program: Dictionary) -> String:
-	var total: int = int(program.get("episodes_total", 0))
-	var available: int = int(program.get("episodes_available", 0))
-	if total <= 0:
-		return "—"
-	if available == total:
-		return str(total)
-	return "%d / %d disponibles" % [available, total]
+static func _get_current_production_text(program: Dictionary) -> String:
+	var current_episode: int = int(program.get("current_episode", 0))
+	if current_episode > 0:
+		return "Épisode %d" % current_episode
+	return "Production en cours"
 
 
 static func _add_cell(table: GridContainer, text: String, column: int, is_header: bool) -> void:
