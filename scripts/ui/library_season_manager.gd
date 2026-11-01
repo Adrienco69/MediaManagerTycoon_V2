@@ -79,18 +79,15 @@ static func render(
 	save_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	dynamic.add_child(save_button)
 
-	var error_label := Label.new()
-	error_label.text = ""
-	dynamic.add_child(error_label)
-
 	var selected_holder := VBoxContainer.new()
 	selected_holder.add_theme_constant_override("separation", 6)
 	dynamic.add_child(selected_holder)
 
 	var selected_codes: Array[int] = _get_existing_codes(program, selected_season[0])
+	var current_program := program.duplicate(true)
 	var refresh_selection: Callable
 	refresh_selection = func() -> void:
-		_refresh_code_dropdown(code_select, program, selected_codes)
+		_refresh_code_dropdown(code_select, current_program, selected_codes)
 		_rebuild_selected_codes(selected_holder, selected_codes, refresh_selection)
 		add_button.disabled = code_select.item_count <= 0
 
@@ -99,18 +96,21 @@ static func render(
 			return
 		selected_season[0] = int(season_select.get_item_metadata(index))
 		selected_codes.clear()
-		for code_prod: int in _get_existing_codes(program, selected_season[0]):
+		for code_prod: int in _get_existing_codes(current_program, selected_season[0]):
 			selected_codes.append(code_prod)
-		error_label.text = ""
 		refresh_selection.call()
 	)
 
+	var error_label := Label.new()
+	error_label.text = ""
+	dynamic.add_child(error_label)
+
 	new_season_button.pressed.connect(func() -> void:
-		var next_season := _next_season_number(program)
+		var next_season := _next_season_number(current_program)
 		selected_season[0] = next_season
 		selected_codes.clear()
-		_populate_season_select(season_select, program, next_season)
-		error_label.text = "Nouvelle saison créée. Ajoute les unités puis clique sur « Enregistrer la saison »."
+		_populate_season_select(season_select, current_program, next_season)
+		error_label.text = "Ajoute les unités de la nouvelle saison puis clique sur « Enregistrer la saison »."
 		refresh_selection.call()
 	)
 
@@ -124,6 +124,23 @@ static func render(
 		refresh_selection.call()
 	)
 
+	var help := Label.new()
+	help.text = "L'ordre d'ajout devient l'ordre éditorial de la saison. Un code prod sélectionné disparaît du menu jusqu'à ce qu'il soit retiré."
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dynamic.add_child(help)
+
+	var current_seasons_holder := VBoxContainer.new()
+	dynamic.add_child(current_seasons_holder)
+
+	var units_holder := VBoxContainer.new()
+	dynamic.add_child(units_holder)
+
+	var refresh_saved_views: Callable = func() -> void:
+		_clear_children(current_seasons_holder)
+		_clear_children(units_holder)
+		_build_current_seasons(current_seasons_holder, current_program)
+		_build_units_table(units_holder, current_program)
+
 	save_button.pressed.connect(func() -> void:
 		if selected_codes.is_empty():
 			error_label.text = "Ajoute au moins un code prod."
@@ -133,18 +150,24 @@ static func render(
 		if not error_text.is_empty():
 			error_label.text = error_text
 			return
+
+		var refreshed_program: Dictionary = GameState.get_program(String(program.get("id", "")))
+		if not refreshed_program.is_empty():
+			current_program = refreshed_program.duplicate(true)
+		else:
+			current_program = _program_with_local_season(current_program, selected_season[0], selected_codes)
+
 		error_label.text = "Saison %d enregistrée." % selected_season[0]
-		_populate_season_select(season_select, _program_with_local_season(program, selected_season[0], selected_codes), selected_season[0])
+		_populate_season_select(season_select, current_program, selected_season[0])
+		selected_codes.clear()
+		for code_prod: int in _get_existing_codes(current_program, selected_season[0]):
+			selected_codes.append(code_prod)
+		refresh_selection.call()
+		refresh_saved_views.call()
 	)
 
-	var help := Label.new()
-	help.text = "L'ordre d'ajout devient l'ordre éditorial de la saison. Un code prod sélectionné disparaît du menu jusqu'à ce qu'il soit retiré."
-	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dynamic.add_child(help)
-
 	refresh_selection.call()
-	_build_current_seasons(dynamic, program)
-	_build_units_table(dynamic, program)
+	refresh_saved_views.call()
 
 
 static func clear(content_container: VBoxContainer) -> void:
@@ -152,6 +175,12 @@ static func clear(content_container: VBoxContainer) -> void:
 	if existing != null:
 		content_container.remove_child(existing)
 		existing.queue_free()
+
+
+static func _clear_children(parent: Node) -> void:
+	for child: Node in parent.get_children():
+		parent.remove_child(child)
+		child.queue_free()
 
 
 static func _initial_season_number(program: Dictionary) -> int:
@@ -296,7 +325,7 @@ static func _build_current_seasons(parent: VBoxContainer, program: Dictionary) -
 	var seasons_value: Variant = program.get("seasons", [])
 	if not seasons_value is Array or (seasons_value as Array).is_empty():
 		var empty := Label.new()
-		empty.text = "Aucun découpage en saison."
+		empty.text = "Aucune saison éditoriale créée."
 		parent.add_child(empty)
 		return
 	for value: Variant in seasons_value:
