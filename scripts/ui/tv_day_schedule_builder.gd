@@ -4,6 +4,7 @@ extends RefCounted
 const AIScheduleGeneratorScript = preload("res://scripts/core/ai_schedule_generator.gd")
 const ZapProgramLabelScript = preload("res://scripts/ui/zap_program_label.gd")
 const TimeRangeSelectorScript = preload("res://scripts/ui/schedule_time_range_selector.gd")
+const ScheduleSlotButtonScript = preload("res://scripts/ui/schedule_slot_button.gd")
 
 const DAYS: Array[String] = [
 	"Lundi",
@@ -109,14 +110,6 @@ static func _show_day(
 	selected_day_label.text = "%s | Semaine %d" % [DAYS[day_index], week_number]
 	_clear(schedule)
 
-	var slot_texts: Array[String] = _build_slot_texts(
-		channel,
-		programs,
-		week_number,
-		day_index,
-		editable
-	)
-
 	var start_slot: int = 0
 	var end_slot: int = 48
 	if editable and not time_range_id.is_empty():
@@ -124,18 +117,60 @@ static func _show_day(
 		start_slot = int(range_data.get("start_slot", 0))
 		end_slot = int(range_data.get("end_slot", 48))
 
-	for slot_index: int in range(start_slot, end_slot):
-		var slot_text: String = slot_texts[slot_index]
+	if editable:
+		var player_slots: Array[Dictionary] = GameState.get_player_day_schedule(
+			channel,
+			week_number,
+			day_index
+		)
 
-		# Dans un guide consultable, un programme n'apparaît qu'à son heure
-		# de début. Les créneaux de continuation restent occupés en interne.
-		if not editable and slot_text.begins_with("↳"):
+		var refresh_current_day: Callable = func() -> void:
+			_show_day(
+				day_index,
+				week_number,
+				true,
+				channel,
+				programs,
+				day_buttons,
+				selected_day_label,
+				schedule,
+				scroll,
+				on_program_selected,
+				time_range_id
+			)
+
+		for slot_index: int in range(start_slot, end_slot):
+			var slot_entry: Dictionary = player_slots[slot_index]
+			_add_editable_slot(
+				schedule,
+				slot_index,
+				slot_entry,
+				programs,
+				channel,
+				week_number,
+				day_index,
+				on_program_selected,
+				refresh_current_day
+			)
+
+		scroll.scroll_vertical = 0
+		return
+
+	var slot_texts: Array[String] = _build_guide_slot_texts(
+		channel,
+		programs,
+		week_number,
+		day_index
+	)
+
+	for slot_index: int in range(48):
+		var slot_text: String = slot_texts[slot_index]
+		if slot_text.begins_with("↳"):
 			continue
 
-		_add_slot(
+		_add_guide_slot(
 			schedule,
 			slot_index,
-			editable,
 			slot_text,
 			programs,
 			channel,
@@ -147,19 +182,18 @@ static func _show_day(
 	scroll.scroll_vertical = 0
 
 
-static func _build_slot_texts(
+static func _build_guide_slot_texts(
 	channel: Dictionary,
 	programs: Array[Dictionary],
 	week_number: int,
-	day_index: int,
-	editable: bool
+	day_index: int
 ) -> Array[String]:
 	var empty_slots: Array[String] = []
 	empty_slots.resize(48)
 	for index: int in range(48):
 		empty_slots[index] = "Vide"
 
-	if editable or not bool(channel.get("auto_schedule", false)):
+	if not bool(channel.get("auto_schedule", false)):
 		return empty_slots
 
 	var schedule_seed: int = int(channel.get("schedule_seed", 1))
@@ -171,10 +205,49 @@ static func _build_slot_texts(
 	)
 
 
-static func _add_slot(
+static func _add_editable_slot(
 	parent: VBoxContainer,
 	slot_index: int,
-	editable: bool,
+	slot_entry: Dictionary,
+	programs: Array[Dictionary],
+	channel: Dictionary,
+	week_number: int,
+	day_index: int,
+	on_program_selected: Callable,
+	refresh_callback: Callable
+) -> void:
+	var row: HBoxContainer = _create_time_row(parent, slot_index)
+	var slot_button: ScheduleSlotButton = ScheduleSlotButtonScript.new()
+	slot_button.text = _get_player_slot_text(slot_entry)
+	slot_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	slot_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slot_button.custom_minimum_size = Vector2(0, 38)
+	slot_button.configure(
+		channel,
+		week_number,
+		day_index,
+		slot_index,
+		refresh_callback
+	)
+
+	if not slot_entry.is_empty() and String(slot_entry.get("kind", "")) == "start":
+		var program: Dictionary = _find_program_by_id_or_name(
+			programs,
+			String(slot_entry.get("program_id", "")),
+			String(slot_entry.get("program_name", ""))
+		)
+		if not program.is_empty() and on_program_selected.is_valid():
+			var captured_program: Dictionary = program.duplicate(true)
+			slot_button.pressed.connect(func() -> void:
+				on_program_selected.call(captured_program)
+			)
+
+	row.add_child(slot_button)
+
+
+static func _add_guide_slot(
+	parent: VBoxContainer,
+	slot_index: int,
 	slot_text: String,
 	programs: Array[Dictionary],
 	channel: Dictionary,
@@ -182,28 +255,7 @@ static func _add_slot(
 	day_index: int,
 	on_program_selected: Callable
 ) -> void:
-	var total_minutes: int = slot_index * 30
-	var hour: int = int(total_minutes / 60)
-	var minute: int = total_minutes % 60
-
-	var row: HBoxContainer = HBoxContainer.new()
-	row.custom_minimum_size = Vector2(0, 42)
-	row.add_theme_constant_override("separation", 8)
-	parent.add_child(row)
-
-	var time_label: Label = Label.new()
-	time_label.text = "%02dh%02d" % [hour, minute]
-	time_label.custom_minimum_size = Vector2(90, 0)
-	time_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(time_label)
-
-	if editable:
-		var slot_button: Button = Button.new()
-		slot_button.text = slot_text
-		slot_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		slot_button.custom_minimum_size = Vector2(0, 38)
-		row.add_child(slot_button)
-		return
+	var row: HBoxContainer = _create_time_row(parent, slot_index)
 
 	if slot_text == "Vide":
 		var empty_label: Label = Label.new()
@@ -245,9 +297,51 @@ static func _add_slot(
 	row.add_child(program_button)
 
 
+static func _create_time_row(parent: VBoxContainer, slot_index: int) -> HBoxContainer:
+	var total_minutes: int = slot_index * 30
+	var hour: int = int(total_minutes / 60)
+	var minute: int = total_minutes % 60
+
+	var row: HBoxContainer = HBoxContainer.new()
+	row.custom_minimum_size = Vector2(0, 42)
+	row.add_theme_constant_override("separation", 8)
+	parent.add_child(row)
+
+	var time_label: Label = Label.new()
+	time_label.text = "%02dh%02d" % [hour, minute]
+	time_label.custom_minimum_size = Vector2(90, 0)
+	time_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(time_label)
+	return row
+
+
+static func _get_player_slot_text(slot_entry: Dictionary) -> String:
+	if slot_entry.is_empty():
+		return "Vide"
+
+	var program_name: String = String(slot_entry.get("program_name", "Programme"))
+	var duration_minutes: int = int(slot_entry.get("duration_minutes", 0))
+	if String(slot_entry.get("kind", "")) == "continuation":
+		return "↳ %s" % program_name
+	return "%s (%d min)" % [program_name, duration_minutes]
+
+
 static func _find_program_by_name(programs: Array[Dictionary], program_name: String) -> Dictionary:
 	for program: Dictionary in programs:
 		if String(program.get("name", "")) == program_name:
+			return program.duplicate(true)
+	return {}
+
+
+static func _find_program_by_id_or_name(
+	programs: Array[Dictionary],
+	program_id: String,
+	program_name: String
+) -> Dictionary:
+	for program: Dictionary in programs:
+		if not program_id.is_empty() and String(program.get("id", "")) == program_id:
+			return program.duplicate(true)
+		if program_id.is_empty() and String(program.get("name", "")) == program_name:
 			return program.duplicate(true)
 	return {}
 
