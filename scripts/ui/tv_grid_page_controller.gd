@@ -2,6 +2,7 @@ class_name TVGridPageController
 extends RefCounted
 
 const WeekSelectorScript = preload("res://scripts/ui/schedule_week_selector.gd")
+const TimeRangeSelectorScript = preload("res://scripts/ui/schedule_time_range_selector.gd")
 const DayScheduleBuilderScript = preload("res://scripts/ui/tv_day_schedule_builder.gd")
 const ProgramCatalogPanelScript = preload("res://scripts/ui/program_catalog_panel.gd")
 const DYNAMIC_NODE_NAME: String = "GridDynamic"
@@ -26,6 +27,10 @@ static func render(
 		page_description.text = _get_description(channel, editable)
 
 	var displayed_programs: Array[Dictionary] = _get_displayed_programs(channel, programs, editable)
+	var view_state: Dictionary = {
+		"week_number": 1,
+		"time_range_id": TimeRangeSelectorScript.DEFAULT_RANGE_ID
+	}
 
 	var dynamic: VBoxContainer = VBoxContainer.new()
 	dynamic.name = DYNAMIC_NODE_NAME
@@ -56,6 +61,30 @@ static func render(
 	days_holder.size_flags_stretch_ratio = 3.0
 	days_holder.add_theme_constant_override("separation", 6)
 	top_row.add_child(days_holder)
+
+	var time_range_holder: HBoxContainer = null
+	if editable:
+		var time_range_row: HBoxContainer = HBoxContainer.new()
+		time_range_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		time_range_row.add_theme_constant_override("separation", 12)
+		dynamic.add_child(time_range_row)
+
+		var time_range_label_holder: HBoxContainer = HBoxContainer.new()
+		time_range_label_holder.custom_minimum_size = Vector2(220, 0)
+		time_range_label_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		time_range_label_holder.size_flags_stretch_ratio = 1.0
+		time_range_row.add_child(time_range_label_holder)
+
+		var time_range_label: Label = Label.new()
+		time_range_label.text = "Plage horaire :"
+		time_range_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		time_range_label_holder.add_child(time_range_label)
+
+		time_range_holder = HBoxContainer.new()
+		time_range_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		time_range_holder.size_flags_stretch_ratio = 3.0
+		time_range_holder.add_theme_constant_override("separation", 6)
+		time_range_row.add_child(time_range_holder)
 
 	var body: HBoxContainer = HBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -89,6 +118,7 @@ static func render(
 	scheduler_holder.add_child(schedule_holder)
 
 	var rebuild_schedule: Callable = func(week_number: int) -> void:
+		view_state["week_number"] = week_number
 		_clear_holder(schedule_holder)
 		_clear_holder(days_holder)
 		DayScheduleBuilderScript.build(
@@ -98,7 +128,20 @@ static func render(
 			channel,
 			displayed_programs,
 			on_program_selected,
-			days_holder
+			days_holder,
+			String(view_state.get("time_range_id", "")) if editable else ""
+		)
+
+	if editable and time_range_holder != null:
+		var on_time_range_selected: Callable = func(range_id: String) -> void:
+			view_state["time_range_id"] = range_id
+			TimeRangeSelectorScript.select(time_range_holder, range_id)
+			rebuild_schedule.call(int(view_state.get("week_number", 1)))
+
+		TimeRangeSelectorScript.build(
+			time_range_holder,
+			String(view_state.get("time_range_id", TimeRangeSelectorScript.DEFAULT_RANGE_ID)),
+			on_time_range_selected
 		)
 
 	var selector_row: HBoxContainer = WeekSelectorScript.build(rebuild_schedule)
