@@ -90,7 +90,7 @@ static func open(
 
 	var frequency_label: Label = Label.new()
 	frequency_label.text = "Fréquence :"
-	frequency_label.custom_minimum_size = Vector2(100, 0)
+	frequency_label.custom_minimum_size = Vector2(140, 0)
 	frequency_row.add_child(frequency_label)
 
 	var frequency_selector: OptionButton = OptionButton.new()
@@ -105,22 +105,22 @@ static func open(
 	automation_box.add_child(quantity_row)
 
 	var quantity_label: Label = Label.new()
-	quantity_label.text = "Quantité :"
-	quantity_label.custom_minimum_size = Vector2(100, 0)
+	quantity_label.text = "Nombre d'épisodes :"
+	quantity_label.custom_minimum_size = Vector2(140, 0)
 	quantity_row.add_child(quantity_label)
 
 	var quantity_spinner: SpinBox = SpinBox.new()
 	quantity_spinner.min_value = 1
 	quantity_spinner.max_value = episode_count
 	quantity_spinner.step = 1
-	quantity_spinner.value = episode_count
+	quantity_spinner.value = 1
 	quantity_spinner.allow_greater = false
 	quantity_spinner.allow_lesser = false
 	quantity_spinner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	quantity_row.add_child(quantity_spinner)
 
 	var automation_hint: Label = Label.new()
-	automation_hint.text = "Le bouton « Automatiser depuis ici » programme les épisodes dans l'ordre à partir de l'épisode choisi, au même horaire."
+	automation_hint.text = "Choisissez le nombre d'épisodes, puis « Automatiser depuis ici ». Hebdomadaire = un épisode par semaine ; quotidienne = un épisode par jour, au même horaire."
 	automation_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	automation_box.add_child(automation_hint)
 
