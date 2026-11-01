@@ -2,7 +2,6 @@ class_name TVDayScheduleBuilder
 extends RefCounted
 
 const AIScheduleGeneratorScript = preload("res://scripts/core/ai_schedule_generator.gd")
-const ProgramDetailPopupScript = preload("res://scripts/ui/program_detail_popup.gd")
 
 const DAYS: Array[String] = [
 	"Lundi",
@@ -20,12 +19,18 @@ static func build(
 	week_number: int,
 	editable: bool,
 	channel: Dictionary,
-	programs: Array[Dictionary]
+	programs: Array[Dictionary],
+	on_program_selected: Callable = Callable(),
+	day_buttons_parent: HBoxContainer = null
 ) -> void:
 	var day_buttons: Array[Button] = []
-	var day_row: HBoxContainer = HBoxContainer.new()
-	day_row.add_theme_constant_override("separation", 6)
-	parent.add_child(day_row)
+	var day_row: HBoxContainer = day_buttons_parent
+	if day_row == null:
+		day_row = HBoxContainer.new()
+		day_row.add_theme_constant_override("separation", 6)
+		parent.add_child(day_row)
+	else:
+		day_row.add_theme_constant_override("separation", 6)
 
 	var selected_day_label: Label = Label.new()
 	selected_day_label.add_theme_font_size_override("font_size", 20)
@@ -45,7 +50,7 @@ static func build(
 	for day_index: int in range(DAYS.size()):
 		var button: Button = Button.new()
 		button.text = DAYS[day_index]
-		button.custom_minimum_size = Vector2(110, 38)
+		button.custom_minimum_size = Vector2(100, 38)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		day_row.add_child(button)
 		day_buttons.append(button)
@@ -61,7 +66,8 @@ static func build(
 				day_buttons,
 				selected_day_label,
 				schedule,
-				scroll
+				scroll,
+				on_program_selected
 			)
 		)
 
@@ -74,7 +80,8 @@ static func build(
 		day_buttons,
 		selected_day_label,
 		schedule,
-		scroll
+		scroll,
+		on_program_selected
 	)
 
 
@@ -87,7 +94,8 @@ static func _show_day(
 	day_buttons: Array[Button],
 	selected_day_label: Label,
 	schedule: VBoxContainer,
-	scroll: ScrollContainer
+	scroll: ScrollContainer,
+	on_program_selected: Callable
 ) -> void:
 	for index: int in range(day_buttons.size()):
 		day_buttons[index].disabled = index == day_index
@@ -106,12 +114,19 @@ static func _show_day(
 	for slot_index: int in range(48):
 		var slot_text: String = slot_texts[slot_index]
 
-		# Zap'Chaine affiche un guide compact : un programme n'apparaît
-		# qu'à son heure de début, même s'il occupe plusieurs blocs de 30 min.
+		# Dans un guide consultable, un programme n'apparaît qu'à son heure
+		# de début. Les créneaux de continuation restent occupés en interne.
 		if not editable and slot_text.begins_with("↳"):
 			continue
 
-		_add_slot(schedule, slot_index, editable, slot_text, programs)
+		_add_slot(
+			schedule,
+			slot_index,
+			editable,
+			slot_text,
+			programs,
+			on_program_selected
+		)
 
 	scroll.scroll_vertical = 0
 
@@ -145,7 +160,8 @@ static func _add_slot(
 	slot_index: int,
 	editable: bool,
 	slot_text: String,
-	programs: Array[Dictionary]
+	programs: Array[Dictionary],
+	on_program_selected: Callable
 ) -> void:
 	var total_minutes: int = slot_index * 30
 	var hour: int = int(total_minutes / 60)
@@ -196,10 +212,14 @@ static func _add_slot(
 	program_button.flat = true
 	program_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	program_button.custom_minimum_size = Vector2(0, 38)
-	var captured_program: Dictionary = program.duplicate(true)
-	program_button.pressed.connect(func() -> void:
-		ProgramDetailPopupScript.open(program_button, captured_program)
-	)
+	program_button.disabled = not on_program_selected.is_valid()
+
+	if on_program_selected.is_valid():
+		var captured_program: Dictionary = program.duplicate(true)
+		program_button.pressed.connect(func() -> void:
+			on_program_selected.call(captured_program)
+		)
+
 	row.add_child(program_button)
 
 
