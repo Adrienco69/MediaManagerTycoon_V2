@@ -138,6 +138,45 @@ func place_program(
 	return true
 
 
+func update_program_episode(
+	channel_number: int,
+	week_number: int,
+	day_index: int,
+	start_slot: int,
+	episode_data: Dictionary
+) -> bool:
+	if start_slot < 0 or start_slot >= SLOT_COUNT_PER_DAY:
+		return false
+
+	var key: String = _make_key(channel_number, week_number, day_index)
+	var day: Array[Dictionary] = get_day_slots(channel_number, week_number, day_index)
+	var start_entry: Dictionary = day[start_slot]
+	if start_entry.is_empty() or String(start_entry.get("kind", "")) != "start":
+		return false
+
+	var slots_count: int = maxi(int(start_entry.get("slots_count", 1)), 1)
+	var episode_global: int = int(episode_data.get("episode_global", 0))
+	var season_number: int = int(episode_data.get("season_number", 0))
+	var episode_number: int = int(episode_data.get("episode_number", 0))
+	if episode_global <= 0:
+		return false
+
+	var end_slot: int = mini(start_slot + slots_count, SLOT_COUNT_PER_DAY)
+	for slot_index: int in range(start_slot, end_slot):
+		var entry: Dictionary = day[slot_index]
+		if entry.is_empty():
+			continue
+		if int(entry.get("start_slot", start_slot)) != start_slot:
+			continue
+		entry["episode_global"] = episode_global
+		entry["season_number"] = season_number
+		entry["episode_number"] = episode_number
+		day[slot_index] = entry
+
+	_days[key] = day
+	return true
+
+
 func _make_key(channel_number: int, week_number: int, day_index: int) -> String:
 	return "%d:%d:%d" % [channel_number, week_number, day_index]
 
