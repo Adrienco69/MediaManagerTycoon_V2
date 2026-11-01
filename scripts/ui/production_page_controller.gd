@@ -13,7 +13,7 @@ static func render(
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	page_description.text = "Les productions restent ici jusqu'à leur fin complète. Aucun épisode n'est diffusable avant la fin de toute la production."
+	page_description.text = "Chaque programme occupe 1 slot du studio. Toutes les unités d'un lot deviennent diffusables ensemble lorsque le lot est terminé."
 
 	var dynamic: VBoxContainer = VBoxContainer.new()
 	dynamic.name = DYNAMIC_NODE_NAME
@@ -31,7 +31,7 @@ static func render(
 	actions.add_child(create_button)
 
 	var info_label: Label = Label.new()
-	info_label.text = "%d / 7 sets occupés au Studio 1" % active_productions.size()
+	info_label.text = "%d / 7 slots occupés au Studio 1" % active_productions.size()
 	info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	actions.add_child(info_label)
 
