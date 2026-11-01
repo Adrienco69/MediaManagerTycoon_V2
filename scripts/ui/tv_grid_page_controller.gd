@@ -125,7 +125,7 @@ static func _update_editable_page_title(
 
 	var title_label: Label = title_node as Label
 	var channel_name: String = String(channel.get("name", ""))
-	title_label.text = "Grille TV | Chaîne : %s | programmation modifiable jusqu'à 52 semaines." % channel_name
+	title_label.text = "Grille TV | Chaîne : %s" % channel_name
 
 
 static func _get_displayed_programs(
@@ -152,7 +152,7 @@ static func _get_displayed_programs(
 static func _get_description(channel: Dictionary, editable: bool) -> String:
 	var channel_name: String = String(channel.get("name", ""))
 	if editable:
-		return "Chaîne : %s | programmation modifiable jusqu'à 52 semaines." % channel_name
+		return "Chaîne : %s" % channel_name
 	return "Chaîne : %s | consultation uniquement, aucune modification possible." % channel_name
 
 
