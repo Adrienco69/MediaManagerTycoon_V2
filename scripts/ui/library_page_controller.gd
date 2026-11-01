@@ -54,20 +54,20 @@ static func _build_table(
 	_add_cell(table, "Programme", 0, true)
 	_add_cell(table, "Format", 1, true)
 	_add_cell(table, "Durée", 2, true)
-	_add_cell(table, "Épisodes disponibles", 3, true)
+	_add_cell(table, "Unités disponibles", 3, true)
 	_add_cell(table, "État", 4, true)
 
 	for program: Dictionary in programs:
 		_add_program_button_cell(table, program, on_open_program)
 		_add_cell(table, String(program.get("format", "")), 1, false)
 		_add_cell(table, "%d min" % int(program.get("duration_minutes", 0)), 2, false)
-		_add_cell(table, _get_available_episode_text(program), 3, false)
+		_add_cell(table, _get_available_unit_text(program), 3, false)
 		_add_cell(table, _get_library_status(program), 4, false)
 
 
-static func _get_available_episode_text(program: Dictionary) -> String:
-	var total: int = int(program.get("episodes_total", 0))
-	var available: int = int(program.get("episodes_available", 0))
+static func _get_available_unit_text(program: Dictionary) -> String:
+	var total: int = int(program.get("units_total", program.get("episodes_total", 0)))
+	var available: int = int(program.get("units_available", program.get("episodes_available", 0)))
 	if total <= 0:
 		return "Variable"
 	if available == total:
