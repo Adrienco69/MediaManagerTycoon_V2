@@ -2,6 +2,8 @@ class_name ScheduleSlotButton
 extends Button
 
 const ScheduleProgramPickerScript = preload("res://scripts/ui/schedule_program_picker.gd")
+const ScheduleEpisodeHelperScript = preload("res://scripts/ui/schedule_episode_helper.gd")
+const ScheduleEpisodePickerScript = preload("res://scripts/ui/schedule_episode_picker.gd")
 
 var channel: Dictionary = {}
 var week_number: int = 1
@@ -81,12 +83,26 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	if not program_value is Dictionary:
 		return
 
+	var program: Dictionary = (program_value as Dictionary).duplicate(true)
+	if ScheduleEpisodeHelperScript.requires_episode_choice(program):
+		ScheduleEpisodePickerScript.open(
+			self,
+			channel,
+			week_number,
+			day_index,
+			slot_index,
+			program,
+			refresh_callback
+		)
+		return
+
 	var placed: bool = GameState.schedule_program(
 		channel,
 		week_number,
 		day_index,
 		slot_index,
-		program_value as Dictionary
+		program,
+		{}
 	)
 	if placed and refresh_callback.is_valid():
 		refresh_callback.call()
