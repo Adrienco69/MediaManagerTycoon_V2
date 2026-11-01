@@ -2,9 +2,10 @@ class_name LibraryProgramDetailController
 extends RefCounted
 
 const ProgramStatusScript = preload("res://scripts/ui/library_program_status.gd")
+const EpisodeTableScript = preload("res://scripts/ui/library_program_episode_table.gd")
+
 const DYNAMIC_NODE_NAME: String = "LibraryProgramDetailDynamic"
 const INFO_WIDTHS: Array[float] = [230.0, 420.0]
-const HISTORY_WIDTHS: Array[float] = [110.0, 110.0, 240.0, 100.0, 220.0, 150.0]
 
 
 static func render(
@@ -15,7 +16,7 @@ static func render(
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	page_description.text = "Fiche du programme | saisons, épisodes et historique des diffusions."
+	page_description.text = "Fiche du programme | informations, épisodes et diffusions."
 
 	var dynamic: VBoxContainer = VBoxContainer.new()
 	dynamic.name = DYNAMIC_NODE_NAME
@@ -28,14 +29,39 @@ static func render(
 	back_button.pressed.connect(on_back)
 	dynamic.add_child(back_button)
 
-	_build_program_info(dynamic, program)
+	var tabs: HBoxContainer = HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 8)
+	dynamic.add_child(tabs)
 
-	var history_title: Label = Label.new()
-	history_title.text = "Historique des diffusions"
-	history_title.add_theme_font_size_override("font_size", 22)
-	dynamic.add_child(history_title)
+	var info_button: Button = Button.new()
+	info_button.text = "Infos pratiques"
+	info_button.custom_minimum_size = Vector2(180, 40)
+	tabs.add_child(info_button)
 
-	_build_broadcast_history(dynamic, program)
+	var episodes_button: Button = Button.new()
+	episodes_button.text = "Épisodes & diffusions"
+	episodes_button.custom_minimum_size = Vector2(210, 40)
+	tabs.add_child(episodes_button)
+
+	var tab_content: VBoxContainer = VBoxContainer.new()
+	tab_content.add_theme_constant_override("separation", 12)
+	dynamic.add_child(tab_content)
+
+	var show_info: Callable = func() -> void:
+		_clear_holder(tab_content)
+		info_button.disabled = true
+		episodes_button.disabled = false
+		_build_program_info(tab_content, program)
+
+	var show_episodes: Callable = func() -> void:
+		_clear_holder(tab_content)
+		info_button.disabled = false
+		episodes_button.disabled = true
+		EpisodeTableScript.build(tab_content, program)
+
+	info_button.pressed.connect(show_info)
+	episodes_button.pressed.connect(show_episodes)
+	show_info.call()
 
 
 static func clear(content_container: VBoxContainer) -> void:
@@ -58,43 +84,6 @@ static func _build_program_info(parent: VBoxContainer, program: Dictionary) -> v
 	_add_info_row(table, "Épisodes disponibles", _get_available_episode_text(program))
 	_add_info_row(table, "Saison(s)", _get_season_text(program))
 	_add_info_row(table, "État", ProgramStatusScript.get_text(program))
-
-
-static func _build_broadcast_history(parent: VBoxContainer, program: Dictionary) -> void:
-	var history_value: Variant = program.get("broadcast_history", [])
-	var history: Array = []
-	if history_value is Array:
-		history = history_value
-
-	if history.is_empty():
-		var empty_label: Label = Label.new()
-		empty_label.text = "Aucune diffusion enregistrée."
-		parent.add_child(empty_label)
-		return
-
-	var table: GridContainer = GridContainer.new()
-	table.columns = 6
-	table.add_theme_constant_override("h_separation", 0)
-	table.add_theme_constant_override("v_separation", 0)
-	parent.add_child(table)
-
-	_add_history_cell(table, "Saison", 0, true)
-	_add_history_cell(table, "Épisode", 1, true)
-	_add_history_cell(table, "Date", 2, true)
-	_add_history_cell(table, "Heure", 3, true)
-	_add_history_cell(table, "Chaîne", 4, true)
-	_add_history_cell(table, "Diffusion", 5, true)
-
-	for item_value: Variant in history:
-		if not item_value is Dictionary:
-			continue
-		var item: Dictionary = item_value
-		_add_history_cell(table, _get_history_season(item), 0, false)
-		_add_history_cell(table, _get_history_episode(item), 1, false)
-		_add_history_cell(table, String(item.get("date", "Date inconnue")), 2, false)
-		_add_history_cell(table, String(item.get("time", "--:--")), 3, false)
-		_add_history_cell(table, String(item.get("channel", "Chaîne inconnue")), 4, false)
-		_add_history_cell(table, String(item.get("type", "Diffusion")), 5, false)
 
 
 static func _get_available_episode_text(program: Dictionary) -> String:
@@ -125,27 +114,9 @@ static func _get_season_text(program: Dictionary) -> String:
 	return "Saison non renseignée"
 
 
-static func _get_history_season(item: Dictionary) -> String:
-	var season_number: int = int(item.get("season", 0))
-	if season_number <= 0:
-		return "Non renseignée"
-	return "S%d" % season_number
-
-
-static func _get_history_episode(item: Dictionary) -> String:
-	var episode_number: int = int(item.get("episode", 0))
-	if episode_number <= 0:
-		return "—"
-	return "E%d" % episode_number
-
-
 static func _add_info_row(table: GridContainer, label_text: String, value_text: String) -> void:
 	_add_panel_label(table, label_text, INFO_WIDTHS[0], true)
 	_add_panel_label(table, value_text, INFO_WIDTHS[1], false)
-
-
-static func _add_history_cell(table: GridContainer, text: String, column: int, is_header: bool) -> void:
-	_add_panel_label(table, text, HISTORY_WIDTHS[column], is_header)
 
 
 static func _add_panel_label(table: GridContainer, text: String, width: float, is_header: bool) -> void:
@@ -173,3 +144,9 @@ static func _add_panel_label(table: GridContainer, text: String, width: float, i
 	if is_header:
 		label.add_theme_font_size_override("font_size", 16)
 	panel.add_child(label)
+
+
+static func _clear_holder(holder: VBoxContainer) -> void:
+	for child: Node in holder.get_children():
+		holder.remove_child(child)
+		child.queue_free()
