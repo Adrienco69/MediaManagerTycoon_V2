@@ -235,6 +235,42 @@ func can_schedule_program(
 	)
 
 
+func can_fit_schedule_program(
+	channel: Dictionary,
+	week_number: int,
+	day_index: int,
+	slot_index: int,
+	program: Dictionary
+) -> bool:
+	var channel_number: int = int(channel.get("mmtn_number", 0))
+	return _player_schedule_manager.can_fit_program(
+		channel_number,
+		week_number,
+		day_index,
+		slot_index,
+		program
+	)
+
+
+func get_schedule_conflicts(
+	channel: Dictionary,
+	week_number: int,
+	day_index: int,
+	slot_index: int,
+	program: Dictionary,
+	ignored_start_slot: int = -1
+) -> Array[Dictionary]:
+	var channel_number: int = int(channel.get("mmtn_number", 0))
+	return _player_schedule_manager.get_conflicts(
+		channel_number,
+		week_number,
+		day_index,
+		slot_index,
+		program,
+		ignored_start_slot
+	)
+
+
 func schedule_program(
 	channel: Dictionary,
 	week_number: int,
@@ -255,6 +291,72 @@ func schedule_program(
 	if placed:
 		schedule_changed.emit()
 	return placed
+
+
+func replace_scheduled_program(
+	channel: Dictionary,
+	week_number: int,
+	day_index: int,
+	slot_index: int,
+	program: Dictionary,
+	episode_data: Dictionary = {}
+) -> bool:
+	var channel_number: int = int(channel.get("mmtn_number", 0))
+	var placed: bool = _player_schedule_manager.replace_program(
+		channel_number,
+		week_number,
+		day_index,
+		slot_index,
+		program,
+		episode_data
+	)
+	if placed:
+		schedule_changed.emit()
+	return placed
+
+
+func remove_scheduled_program(
+	channel: Dictionary,
+	week_number: int,
+	day_index: int,
+	slot_index: int
+) -> bool:
+	var channel_number: int = int(channel.get("mmtn_number", 0))
+	var removed: bool = _player_schedule_manager.remove_program_at(
+		channel_number,
+		week_number,
+		day_index,
+		slot_index
+	)
+	if removed:
+		schedule_changed.emit()
+	return removed
+
+
+func move_scheduled_program(
+	channel: Dictionary,
+	source_week: int,
+	source_day: int,
+	source_slot: int,
+	target_week: int,
+	target_day: int,
+	target_slot: int,
+	replace_conflicts: bool = false
+) -> bool:
+	var channel_number: int = int(channel.get("mmtn_number", 0))
+	var moved: bool = _player_schedule_manager.move_program(
+		channel_number,
+		source_week,
+		source_day,
+		source_slot,
+		target_week,
+		target_day,
+		target_slot,
+		replace_conflicts
+	)
+	if moved:
+		schedule_changed.emit()
+	return moved
 
 
 func update_scheduled_episode(
