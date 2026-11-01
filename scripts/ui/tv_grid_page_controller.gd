@@ -158,9 +158,21 @@ static func render(
 
 	if editable and time_range_holder != null:
 		var on_time_range_selected: Callable = func(range_id: String) -> void:
+			var selected_day_index: int = 0
+			for index: int in range(days_holder.get_child_count()):
+				var day_node: Node = days_holder.get_child(index)
+				if day_node is Button and (day_node as Button).disabled:
+					selected_day_index = index
+					break
+
 			view_state["time_range_id"] = range_id
 			TimeRangeSelectorScript.select(time_range_holder, range_id)
 			rebuild_schedule.call(int(view_state.get("week_number", 1)))
+
+			if selected_day_index >= 0 and selected_day_index < days_holder.get_child_count():
+				var restored_day_node: Node = days_holder.get_child(selected_day_index)
+				if restored_day_node is Button:
+					(restored_day_node as Button).pressed.emit()
 
 		TimeRangeSelectorScript.build(
 			time_range_holder,
