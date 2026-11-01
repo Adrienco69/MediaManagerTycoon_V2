@@ -73,7 +73,18 @@ static func build(
 	list.add_theme_constant_override("separation", 6)
 	scroll.add_child(list)
 
+	var sorted_programs: Array[Dictionary] = []
 	for program: Dictionary in programs:
+		sorted_programs.append(program)
+	sorted_programs.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var type_a: String = _get_format_name(a).to_lower()
+		var type_b: String = _get_format_name(b).to_lower()
+		if type_a == type_b:
+			return String(a.get("name", "Programme")).to_lower() < String(b.get("name", "Programme")).to_lower()
+		return type_a < type_b
+	)
+
+	for program: Dictionary in sorted_programs:
 		var button: Button
 		if editable:
 			var draggable_button: DraggableProgramButton = DraggableProgramButtonScript.new()
@@ -82,11 +93,13 @@ static func build(
 		else:
 			button = Button.new()
 
-		button.text = "%s (%d min)" % [
-			String(program.get("name", "")),
+		button.text = "%s | %s | %d min" % [
+			_get_format_name(program),
+			String(program.get("name", "Programme")),
 			int(program.get("duration_minutes", 0))
 		]
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.custom_minimum_size = Vector2(0, 38)
 		button.disabled = not on_program_selected.is_valid() and not editable
@@ -106,3 +119,10 @@ static func build(
 			)
 
 		list.add_child(button)
+
+
+static func _get_format_name(program: Dictionary) -> String:
+	var format_name: String = String(program.get("format", "Programme")).strip_edges()
+	if format_name.is_empty():
+		return "Programme"
+	return format_name
