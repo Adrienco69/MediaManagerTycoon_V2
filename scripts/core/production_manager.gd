@@ -123,15 +123,13 @@ func advance_minutes(amount: int) -> bool:
 		var production: Dictionary = _active_productions[index]
 		var before_remaining: int = maxi(int(production.get("production_remaining_minutes", 0)), 0)
 		var before_produced: int = ProductionRulesScript.get_produced_episode_count(production)
-		var before_days: int = int(ceil(float(before_remaining) / float(ProductionRulesScript.DAY_MINUTES)))
 
 		var after_remaining: int = maxi(before_remaining - amount, 0)
 		production["production_remaining_minutes"] = after_remaining
 		_active_productions[index] = production
 
 		var after_produced: int = ProductionRulesScript.get_produced_episode_count(production)
-		var after_days: int = int(ceil(float(after_remaining) / float(ProductionRulesScript.DAY_MINUTES)))
-		if before_produced != after_produced or before_days != after_days:
+		if before_remaining != after_remaining or before_produced != after_produced:
 			visible_change = true
 
 		if after_remaining <= 0:
