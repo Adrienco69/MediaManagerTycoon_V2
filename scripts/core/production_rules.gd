@@ -97,10 +97,9 @@ static func get_produced_episode_count(production: Dictionary) -> int:
 
 
 static func get_unit_count(program: Dictionary) -> int:
-	var units_total: int = int(program.get("units_total", 0))
-	if units_total > 0:
-		return units_total
-	return maxi(int(program.get("episodes_total", 1)), 1)
+	if program.has("units_total"):
+		return maxi(int(program.get("units_total", 0)), 0)
+	return maxi(int(program.get("episodes_total", 0)), 0)
 
 
 static func format_remaining_time(remaining_minutes: int) -> String:
