@@ -73,6 +73,16 @@ static func render(
 	editorial_title.add_theme_font_size_override("font_size", 18)
 	dynamic.add_child(editorial_title)
 
+	var save_button := Button.new()
+	save_button.text = "Enregistrer la saison"
+	save_button.custom_minimum_size = Vector2(220, 42)
+	save_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	dynamic.add_child(save_button)
+
+	var error_label := Label.new()
+	error_label.text = ""
+	dynamic.add_child(error_label)
+
 	var selected_holder := VBoxContainer.new()
 	selected_holder.add_theme_constant_override("separation", 6)
 	dynamic.add_child(selected_holder)
@@ -91,6 +101,7 @@ static func render(
 		selected_codes.clear()
 		for code_prod: int in _get_existing_codes(program, selected_season[0]):
 			selected_codes.append(code_prod)
+		error_label.text = ""
 		refresh_selection.call()
 	)
 
@@ -99,6 +110,7 @@ static func render(
 		selected_season[0] = next_season
 		selected_codes.clear()
 		_populate_season_select(season_select, program, next_season)
+		error_label.text = "Nouvelle saison créée. Ajoute les unités puis clique sur « Enregistrer la saison »."
 		refresh_selection.call()
 	)
 
@@ -112,21 +124,6 @@ static func render(
 		refresh_selection.call()
 	)
 
-	var help := Label.new()
-	help.text = "L'ordre d'ajout devient l'ordre éditorial de la saison. Un code prod sélectionné disparaît du menu jusqu'à ce qu'il soit retiré."
-	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dynamic.add_child(help)
-
-	var error_label := Label.new()
-	error_label.text = ""
-	dynamic.add_child(error_label)
-
-	var save_button := Button.new()
-	save_button.text = "Enregistrer la saison"
-	save_button.custom_minimum_size = Vector2(220, 42)
-	save_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	dynamic.add_child(save_button)
-
 	save_button.pressed.connect(func() -> void:
 		if selected_codes.is_empty():
 			error_label.text = "Ajoute au moins un code prod."
@@ -139,6 +136,11 @@ static func render(
 		error_label.text = "Saison %d enregistrée." % selected_season[0]
 		_populate_season_select(season_select, _program_with_local_season(program, selected_season[0], selected_codes), selected_season[0])
 	)
+
+	var help := Label.new()
+	help.text = "L'ordre d'ajout devient l'ordre éditorial de la saison. Un code prod sélectionné disparaît du menu jusqu'à ce qu'il soit retiré."
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dynamic.add_child(help)
 
 	refresh_selection.call()
 	_build_current_seasons(dynamic, program)
