@@ -98,6 +98,75 @@ func start_new_game(new_player_name: String, new_company_name: String) -> void:
 	_mmtn_registry.reset()
 	_production_manager.reset()
 
+	_emit_full_state_refresh()
+
+
+func get_save_data() -> Dictionary:
+	return {
+		"player_name": player_name,
+		"company_name": company_name,
+		"credits": credits,
+		"calendar": {
+			"year": year,
+			"month_index": month_index,
+			"week_in_month": week_in_month,
+			"week_in_year": week_in_year,
+			"day_in_week": day_in_week,
+			"hour": hour,
+			"minute": minute
+		},
+		"time_mode": int(time_mode),
+		"player_channels": _player_channel_manager.get_channels(),
+		"mmtn_history": _mmtn_registry.get_channels(),
+		"programs": _production_manager.get_programs(),
+		"launch_series_telefilm_distribution": _production_manager.get_launch_series_telefilm_distribution()
+	}
+
+
+func load_save_data(data: Dictionary) -> bool:
+	var loaded_player_name: String = String(data.get("player_name", "")).strip_edges()
+	var loaded_company_name: String = String(data.get("company_name", "")).strip_edges()
+	if loaded_player_name.is_empty() or loaded_company_name.is_empty():
+		return false
+
+	player_name = loaded_player_name
+	company_name = loaded_company_name
+	credits = maxi(int(data.get("credits", STARTING_CREDITS)), 0)
+
+	var calendar_value: Variant = data.get("calendar", {})
+	var calendar: Dictionary = {}
+	if calendar_value is Dictionary:
+		calendar = calendar_value
+
+	year = maxi(int(calendar.get("year", 1)), 1)
+	month_index = clampi(int(calendar.get("month_index", 0)), 0, MONTHS.size() - 1)
+	week_in_month = maxi(int(calendar.get("week_in_month", 1)), 1)
+	week_in_year = clampi(int(calendar.get("week_in_year", 1)), 1, 52)
+	day_in_week = clampi(int(calendar.get("day_in_week", 1)), 1, 7)
+	hour = clampi(int(calendar.get("hour", 0)), 0, 23)
+	minute = clampi(int(calendar.get("minute", 0)), 0, 59)
+	time_mode = int(clampi(int(data.get("time_mode", TimeMode.PAUSED)), TimeMode.PAUSED, TimeMode.WEEK)) as TimeMode
+	_minute_buffer = 0.0
+
+	var channels_value: Variant = data.get("player_channels", [])
+	var channels: Array = channels_value if channels_value is Array else []
+	_player_channel_manager.load_channels(channels)
+
+	var mmtn_value: Variant = data.get("mmtn_history", [])
+	var mmtn_history: Array = mmtn_value if mmtn_value is Array else []
+	_mmtn_registry.load_history(mmtn_history)
+
+	var programs_value: Variant = data.get("programs", [])
+	var programs: Array = programs_value if programs_value is Array else []
+	var distribution_value: Variant = data.get("launch_series_telefilm_distribution", {})
+	var distribution: Dictionary = distribution_value if distribution_value is Dictionary else {}
+	_production_manager.load_data(programs, distribution)
+
+	_emit_full_state_refresh()
+	return true
+
+
+func _emit_full_state_refresh() -> void:
 	identity_changed.emit(player_name, company_name)
 	credits_changed.emit(credits)
 	time_changed.emit()
