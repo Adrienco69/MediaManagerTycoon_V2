@@ -56,7 +56,55 @@ static func _build_theme(
 	result.set_stylebox("normal", "LineEdit", _make_box(surface_alt.darkened(0.08), accent.darkened(0.30), 8, 1))
 	result.set_stylebox("focus", "LineEdit", _make_box(surface_alt, accent_soft, 8, 2))
 	result.set_stylebox("separator", "HSeparator", _make_separator_box(accent.darkened(0.20)))
+
+	_apply_option_button_theme(result, surface, surface_alt, accent, accent_soft)
+	_apply_popup_menu_theme(result, surface, surface_alt, accent, accent_soft)
 	return result
+
+
+static func _apply_option_button_theme(
+	theme: Theme,
+	surface: Color,
+	surface_alt: Color,
+	accent: Color,
+	accent_soft: Color
+) -> void:
+	theme.set_color("font_color", "OptionButton", TEXT_WHITE)
+	theme.set_color("font_hover_color", "OptionButton", TEXT_WHITE)
+	theme.set_color("font_pressed_color", "OptionButton", TEXT_WHITE)
+	theme.set_color("font_focus_color", "OptionButton", TEXT_WHITE)
+	theme.set_color("font_disabled_color", "OptionButton", TEXT_WHITE_DISABLED)
+
+	theme.set_stylebox("normal", "OptionButton", _make_box(surface_alt, accent.darkened(0.35), 8, 1))
+	theme.set_stylebox("hover", "OptionButton", _make_box(surface_alt.lightened(0.10), accent, 8, 1))
+	theme.set_stylebox("pressed", "OptionButton", _make_box(accent.darkened(0.35), accent_soft, 8, 1))
+	theme.set_stylebox("disabled", "OptionButton", _make_box(surface.darkened(0.10), surface_alt, 8, 1))
+	theme.set_stylebox("focus", "OptionButton", _make_outline_box(accent_soft, 8, 2))
+
+
+static func _apply_popup_menu_theme(
+	theme: Theme,
+	surface: Color,
+	surface_alt: Color,
+	accent: Color,
+	accent_soft: Color
+) -> void:
+	theme.set_color("font_color", "PopupMenu", TEXT_WHITE)
+	theme.set_color("font_hover_color", "PopupMenu", TEXT_WHITE)
+	theme.set_color("font_accelerator_color", "PopupMenu", TEXT_WHITE_SOFT)
+	theme.set_color("font_disabled_color", "PopupMenu", TEXT_WHITE_DISABLED)
+	theme.set_color("font_separator_color", "PopupMenu", TEXT_WHITE_SOFT)
+
+	theme.set_stylebox("panel", "PopupMenu", _make_box(surface, accent.darkened(0.25), 8, 1))
+	theme.set_stylebox("hover", "PopupMenu", _make_box(surface_alt.lightened(0.10), accent, 5, 1))
+	theme.set_stylebox("separator", "PopupMenu", _make_separator_box(accent.darkened(0.20)))
+	theme.set_stylebox("labeled_separator_left", "PopupMenu", _make_separator_box(accent.darkened(0.20)))
+	theme.set_stylebox("labeled_separator_right", "PopupMenu", _make_separator_box(accent.darkened(0.20)))
+
+	# Garde une marge lisible autour des éléments du menu ouvert.
+	theme.set_constant("item_start_padding", "PopupMenu", 10)
+	theme.set_constant("item_end_padding", "PopupMenu", 10)
+	theme.set_constant("outline_size", "PopupMenu", 0)
 
 
 static func _make_box(background_color: Color, border_color: Color, radius: int, border_width: int) -> StyleBoxFlat:
