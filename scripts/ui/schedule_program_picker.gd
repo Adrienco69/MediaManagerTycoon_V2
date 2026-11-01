@@ -79,8 +79,19 @@ static func open(
 	program_list.add_theme_constant_override("separation", 6)
 	scroll.add_child(program_list)
 
-	var available_count: int = 0
+	var sorted_programs: Array[Dictionary] = []
 	for program: Dictionary in programs:
+		sorted_programs.append(program)
+	sorted_programs.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var type_a: String = _get_format_name(a).to_lower()
+		var type_b: String = _get_format_name(b).to_lower()
+		if type_a == type_b:
+			return String(a.get("name", "Programme")).to_lower() < String(b.get("name", "Programme")).to_lower()
+		return type_a < type_b
+	)
+
+	var available_count: int = 0
+	for program: Dictionary in sorted_programs:
 		var compatible: bool = GameState.can_schedule_program(
 			channel,
 			week_number,
@@ -95,13 +106,11 @@ static func open(
 		)
 
 		var program_button: Button = Button.new()
-		var format_name: String = String(program.get("format", "Programme")).strip_edges()
-		if format_name.is_empty():
-			format_name = "Programme"
-		program_button.text = "%s (%d min) | %s" % [
+		var format_name: String = _get_format_name(program)
+		program_button.text = "%s | %s | %d min" % [
+			format_name,
 			String(program.get("name", "Programme")),
-			int(program.get("duration_minutes", 0)),
-			format_name
+			int(program.get("duration_minutes", 0))
 		]
 		program_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		program_button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -172,6 +181,13 @@ static func _add_empty_message(parent: VBoxContainer, text: String) -> void:
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	parent.add_child(label)
+
+
+static func _get_format_name(program: Dictionary) -> String:
+	var format_name: String = String(program.get("format", "Programme")).strip_edges()
+	if format_name.is_empty():
+		return "Programme"
+	return format_name
 
 
 static func _get_time_text(slot_index: int) -> String:
