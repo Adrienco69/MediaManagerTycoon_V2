@@ -1,6 +1,8 @@
 class_name ScheduleProgramPicker
 extends RefCounted
 
+const ScheduleWeekUsageScript = preload("res://scripts/ui/schedule_week_usage.gd")
+
 const DAYS: Array[String] = [
 	"Lundi",
 	"Mardi",
@@ -57,7 +59,7 @@ static func open(
 	content.add_child(context_label)
 
 	var hint: Label = Label.new()
-	hint.text = "Choisissez un programme à diffuser à cette heure."
+	hint.text = "Choisissez un programme à diffuser à cette heure. Orange = déjà programmé dans cette semaine."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(hint)
 
@@ -84,6 +86,11 @@ static func open(
 			slot_index,
 			program
 		)
+		var already_scheduled: bool = ScheduleWeekUsageScript.is_program_scheduled(
+			channel,
+			week_number,
+			program
+		)
 
 		var program_button: Button = Button.new()
 		program_button.text = "%s (%d min)" % [
@@ -93,6 +100,7 @@ static func open(
 		program_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		program_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		program_button.custom_minimum_size = Vector2(0, 40)
+		ScheduleWeekUsageScript.apply_highlight(program_button, already_scheduled)
 		program_button.disabled = not compatible
 		program_list.add_child(program_button)
 
