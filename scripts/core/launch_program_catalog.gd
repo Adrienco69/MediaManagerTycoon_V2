@@ -14,10 +14,11 @@ static func build(channel_name: String, player_series_telefilm: Dictionary) -> A
 	programs.append(_program("Notre monde en crises", "Shortcom", 30, 25, 25))
 	programs.append(_program("Le futur pour un passée", "Shortcom", 30, 50, 50))
 
-	# Les épisodes 1 à 6 sont disponibles, mais aucun épisode suivant n'est
-	# automatiquement lancé en production au début de la partie.
-	programs.append(_program("La vie du lycée", "Série", 30, 21, 6))
-	programs.append(_program("Une famille presque parfaite", "Série", 60, 21, 6))
+	# Au lancement, le groupe possède déjà tous les épisodes.
+	# La limite d'un inédit chaîne par semaine est une règle de programmation,
+	# pas une limitation du nombre d'épisodes possédés.
+	programs.append(_program("La vie du lycée", "Série", 30, 21, 21))
+	programs.append(_program("Une famille presque parfaite", "Série", 60, 21, 21))
 
 	if not player_series_telefilm.is_empty():
 		var series_telefilm_name: String = String(player_series_telefilm.get("name", ""))
