@@ -257,6 +257,26 @@ func schedule_program(
 	return placed
 
 
+func update_scheduled_episode(
+	channel: Dictionary,
+	week_number: int,
+	day_index: int,
+	slot_index: int,
+	episode_data: Dictionary
+) -> bool:
+	var channel_number: int = int(channel.get("mmtn_number", 0))
+	var updated: bool = _player_schedule_manager.update_program_episode(
+		channel_number,
+		week_number,
+		day_index,
+		slot_index,
+		episode_data
+	)
+	if updated:
+		schedule_changed.emit()
+	return updated
+
+
 func get_group_programs() -> Array[Dictionary]:
 	return _production_manager.get_programs()
 
