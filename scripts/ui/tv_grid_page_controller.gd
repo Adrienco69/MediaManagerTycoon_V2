@@ -17,14 +17,19 @@ static func render(
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	page_description.text = _get_description(channel, editable)
+
+	if editable:
+		page_description.text = ""
+		_update_editable_page_title(content_container, channel)
+	else:
+		page_description.text = _get_description(channel, editable)
 
 	var displayed_programs: Array[Dictionary] = _get_displayed_programs(channel, programs, editable)
 
 	var dynamic: VBoxContainer = VBoxContainer.new()
 	dynamic.name = DYNAMIC_NODE_NAME
 	dynamic.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	dynamic.add_theme_constant_override("separation", 10)
+	dynamic.add_theme_constant_override("separation", 8)
 	content_container.add_child(dynamic)
 
 	if on_back.is_valid():
@@ -38,7 +43,6 @@ static func render(
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 12)
-	dynamic.add_child(body)
 
 	var catalog_holder: VBoxContainer = VBoxContainer.new()
 	catalog_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -52,7 +56,7 @@ static func render(
 	scheduler_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scheduler_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scheduler_holder.size_flags_stretch_ratio = 3.0
-	scheduler_holder.add_theme_constant_override("separation", 10)
+	scheduler_holder.add_theme_constant_override("separation", 6)
 	body.add_child(scheduler_holder)
 
 	var schedule_holder: VBoxContainer = VBoxContainer.new()
@@ -70,8 +74,19 @@ static func render(
 		)
 
 	var selector_row: HBoxContainer = WeekSelectorScript.build(rebuild_schedule)
-	scheduler_holder.add_child(selector_row)
-	scheduler_holder.add_child(schedule_holder)
+
+	if editable:
+		# Sur la grille du joueur, la semaine remplace l'ancien texte descriptif
+		# afin de remonter au maximum les boutons Lundi à Dimanche.
+		dynamic.add_child(selector_row)
+		dynamic.add_child(body)
+		scheduler_holder.add_child(schedule_holder)
+	else:
+		# Dans Zap'Chaine, on conserve le bouton retour et le sélecteur
+		# directement au-dessus de la grille consultée.
+		dynamic.add_child(body)
+		scheduler_holder.add_child(selector_row)
+		scheduler_holder.add_child(schedule_holder)
 
 	rebuild_schedule.call(1)
 
@@ -81,6 +96,19 @@ static func clear(content_container: VBoxContainer) -> void:
 	if existing != null:
 		content_container.remove_child(existing)
 		existing.queue_free()
+
+
+static func _update_editable_page_title(
+	content_container: VBoxContainer,
+	channel: Dictionary
+) -> void:
+	var title_node: Node = content_container.get_node_or_null("PageTitle")
+	if not title_node is Label:
+		return
+
+	var title_label: Label = title_node as Label
+	var channel_name: String = String(channel.get("name", ""))
+	title_label.text = "Grille TV | Chaîne : %s | programmation modifiable jusqu'à 52 semaines." % channel_name
 
 
 static func _get_displayed_programs(
