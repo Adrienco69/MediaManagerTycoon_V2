@@ -1,6 +1,7 @@
 class_name ProductionRules
 extends RefCounted
 
+const HOUR_MINUTES: int = 60
 const DAY_MINUTES: int = 1440
 const FORMATS: Array[String] = [
 	"Série",
@@ -44,78 +45,62 @@ static func get_cost(format_name: String) -> int:
 	return 850
 
 
+static func get_unit_work_minutes(format_name: String) -> int:
+	match format_name:
+		"Shortcom":
+			return 1 * HOUR_MINUTES
+		"Série":
+			return 2 * HOUR_MINUTES
+		"Série-téléfilm":
+			return 10 * HOUR_MINUTES
+		"Téléfilm":
+			return 23 * HOUR_MINUTES
+		"Film":
+			return 24 * HOUR_MINUTES
+	return 0
+
+
 static func get_total_minutes(
 	format_name: String,
-	duration_minutes: int,
-	episode_count: int
+	_duration_minutes: int,
+	unit_count: int
 ) -> int:
-	var episodes: int = maxi(episode_count, 1)
-	var total_days: int = 0
-
-	match format_name:
-		"Série":
-			total_days = episodes * 7
-		"Shortcom":
-			total_days = int(ceil(float(episodes) / 2.0))
-		"Série-téléfilm":
-			if duration_minutes == 60:
-				total_days = episodes * 14
-			elif duration_minutes == 90:
-				total_days = episodes * 21
-		"Téléfilm":
-			if duration_minutes == 90:
-				total_days = 21
-			elif duration_minutes == 120:
-				total_days = 28
-		"Film":
-			match duration_minutes:
-				90:
-					total_days = 21
-				120:
-					total_days = 28
-				150:
-					total_days = 35
-				180:
-					total_days = 42
-
-	return total_days * DAY_MINUTES
+	var units: int = 1 if is_single_unit(format_name) else maxi(unit_count, 1)
+	var work_per_unit: int = get_unit_work_minutes(format_name)
+	if work_per_unit <= 0:
+		return 0
+	return work_per_unit * units
 
 
 static func get_total_days(
 	format_name: String,
 	duration_minutes: int,
-	episode_count: int
+	unit_count: int
 ) -> int:
-	var total_minutes: int = get_total_minutes(format_name, duration_minutes, episode_count)
+	var total_minutes: int = get_total_minutes(format_name, duration_minutes, unit_count)
 	if total_minutes <= 0:
 		return 0
 	return int(ceil(float(total_minutes) / float(DAY_MINUTES)))
 
 
-static func get_produced_episode_count(production: Dictionary) -> int:
-	var total_episodes: int = maxi(int(production.get("episodes_total", 1)), 1)
+static func get_completed_unit_count(production: Dictionary) -> int:
+	var total_units: int = get_unit_count(production)
 	var remaining_minutes: int = maxi(int(production.get("production_remaining_minutes", 0)), 0)
-	if remaining_minutes <= 0:
-		return total_episodes
+	return total_units if remaining_minutes <= 0 else 0
 
-	var total_minutes: int = maxi(int(production.get("production_total_minutes", 0)), 0)
-	var elapsed_minutes: int = maxi(total_minutes - remaining_minutes, 0)
-	var format_name: String = String(production.get("format", ""))
-	var duration_minutes: int = int(production.get("duration_minutes", 0))
-	var produced: int = 0
 
-	match format_name:
-		"Série":
-			produced = int(elapsed_minutes / (7 * DAY_MINUTES))
-		"Shortcom":
-			produced = int(elapsed_minutes / DAY_MINUTES) * 2
-		"Série-téléfilm":
-			var episode_days: int = 14 if duration_minutes == 60 else 21
-			produced = int(elapsed_minutes / (episode_days * DAY_MINUTES))
-		_:
-			produced = 0
+static func get_produced_episode_count(production: Dictionary) -> int:
+	# Compatibilité avec les anciens écrans/sauvegardes : un lot n'est disponible
+	# qu'une fois entièrement terminé, donc aucune unité n'est considérée comme
+	# produite/diffusable avant la fin du lot.
+	return get_completed_unit_count(production)
 
-	return clampi(produced, 0, total_episodes)
+
+static func get_unit_count(program: Dictionary) -> int:
+	var units_total: int = int(program.get("units_total", 0))
+	if units_total > 0:
+		return units_total
+	return maxi(int(program.get("episodes_total", 1)), 1)
 
 
 static func format_remaining_time(remaining_minutes: int) -> String:
