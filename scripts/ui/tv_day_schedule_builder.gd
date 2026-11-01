@@ -103,7 +103,14 @@ static func _show_day(
 	)
 
 	for slot_index: int in range(48):
-		_add_slot(schedule, slot_index, editable, slot_texts[slot_index])
+		var slot_text: String = slot_texts[slot_index]
+
+		# Zap'Chaine affiche un guide compact : un programme n'apparaît
+		# qu'à son heure de début, même s'il occupe plusieurs blocs de 30 min.
+		if not editable and slot_text.begins_with("↳"):
+			continue
+
+		_add_slot(schedule, slot_index, editable, slot_text)
 
 	scroll.scroll_vertical = 0
 
