@@ -41,3 +41,11 @@ static func load_game() -> Dictionary:
 	if int(data.get("save_version", 0)) <= 0:
 		return {}
 	return data
+
+
+static func delete_save() -> bool:
+	if not has_save():
+		return true
+
+	var absolute_path: String = ProjectSettings.globalize_path(SAVE_PATH)
+	return DirAccess.remove_absolute(absolute_path) == OK
