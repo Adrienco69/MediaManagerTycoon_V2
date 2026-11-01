@@ -5,6 +5,7 @@ const AIScheduleGeneratorScript = preload("res://scripts/core/ai_schedule_genera
 const ZapProgramLabelScript = preload("res://scripts/ui/zap_program_label.gd")
 const TimeRangeSelectorScript = preload("res://scripts/ui/schedule_time_range_selector.gd")
 const ScheduleSlotButtonScript = preload("res://scripts/ui/schedule_slot_button.gd")
+const ScheduleEpisodeHelperScript = preload("res://scripts/ui/schedule_episode_helper.gd")
 
 const DAYS: Array[String] = [
 	"Lundi",
@@ -248,7 +249,7 @@ static func _add_editable_slot(
 ) -> void:
 	var row: HBoxContainer = _create_time_row(parent, slot_index)
 	var slot_button: ScheduleSlotButton = ScheduleSlotButtonScript.new()
-	slot_button.text = _get_player_slot_text(slot_entry)
+	slot_button.text = _get_player_slot_text(slot_entry, programs)
 	slot_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	slot_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	slot_button.custom_minimum_size = Vector2(0, 38)
@@ -315,7 +316,8 @@ static func _add_player_guide_slot(
 		channel,
 		week_number,
 		day_index,
-		slot_index
+		slot_index,
+		slot_entry
 	)
 	program_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	program_button.flat = true
@@ -402,7 +404,10 @@ static func _create_time_row(parent: VBoxContainer, slot_index: int) -> HBoxCont
 	return row
 
 
-static func _get_player_slot_text(slot_entry: Dictionary) -> String:
+static func _get_player_slot_text(
+	slot_entry: Dictionary,
+	programs: Array[Dictionary]
+) -> String:
 	if slot_entry.is_empty():
 		return "Vide"
 
@@ -410,7 +415,27 @@ static func _get_player_slot_text(slot_entry: Dictionary) -> String:
 	var duration_minutes: int = int(slot_entry.get("duration_minutes", 0))
 	if String(slot_entry.get("kind", "")) == "continuation":
 		return "↳ %s" % program_name
-	return "%s (%d min)" % [program_name, duration_minutes]
+
+	var program: Dictionary = _find_program_by_id_or_name(
+		programs,
+		String(slot_entry.get("program_id", "")),
+		program_name
+	)
+	var parts: Array[String] = [program_name]
+	if not program.is_empty():
+		var episode_label: String = ScheduleEpisodeHelperScript.get_compact_label(
+			program,
+			{
+				"episode_global": int(slot_entry.get("episode_global", 0)),
+				"season_number": int(slot_entry.get("season_number", 0)),
+				"episode_number": int(slot_entry.get("episode_number", 0))
+			}
+		)
+		if not episode_label.is_empty():
+			parts.append(episode_label)
+	if duration_minutes > 0:
+		parts.append("%d min" % duration_minutes)
+	return " | ".join(parts)
 
 
 static func _is_player_channel(channel: Dictionary) -> bool:
