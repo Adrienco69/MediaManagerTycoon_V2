@@ -21,3 +21,11 @@ func get_programs() -> Array[Dictionary]:
 	for program: Dictionary in _programs:
 		result.append(program.duplicate(true))
 	return result
+
+
+func get_active_productions() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for program: Dictionary in _programs:
+		if String(program.get("status", "")) == "Production en cours":
+			result.append(program.duplicate(true))
+	return result
