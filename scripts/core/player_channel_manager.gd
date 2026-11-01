@@ -36,6 +36,13 @@ func create_first_channel(channel_name: String) -> bool:
 	return true
 
 
+func load_channels(channels: Array) -> void:
+	_channels.clear()
+	for value: Variant in channels:
+		if value is Dictionary:
+			_channels.append((value as Dictionary).duplicate(true))
+
+
 func get_first_channel() -> Dictionary:
 	if _channels.is_empty():
 		return {}
