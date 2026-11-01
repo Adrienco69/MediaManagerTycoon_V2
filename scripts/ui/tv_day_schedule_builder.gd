@@ -267,7 +267,12 @@ static func _add_editable_slot(
 			String(slot_entry.get("program_id", "")),
 			String(slot_entry.get("program_name", ""))
 		)
-		if not program.is_empty() and on_program_selected.is_valid():
+		var needs_episode_choice: bool = (
+			not program.is_empty()
+			and ScheduleEpisodeHelperScript.requires_episode_choice(program)
+			and int(slot_entry.get("episode_global", 0)) <= 0
+		)
+		if not needs_episode_choice and not program.is_empty() and on_program_selected.is_valid():
 			var captured_program: Dictionary = program.duplicate(true)
 			slot_button.pressed.connect(func() -> void:
 				on_program_selected.call(captured_program)
@@ -423,16 +428,22 @@ static func _get_player_slot_text(
 	)
 	var parts: Array[String] = [program_name]
 	if not program.is_empty():
-		var episode_label: String = ScheduleEpisodeHelperScript.get_compact_label(
-			program,
-			{
-				"episode_global": int(slot_entry.get("episode_global", 0)),
-				"season_number": int(slot_entry.get("season_number", 0)),
-				"episode_number": int(slot_entry.get("episode_number", 0))
-			}
-		)
-		if not episode_label.is_empty():
-			parts.append(episode_label)
+		if (
+			ScheduleEpisodeHelperScript.requires_episode_choice(program)
+			and int(slot_entry.get("episode_global", 0)) <= 0
+		):
+			parts.append("Épisode à choisir")
+		else:
+			var episode_label: String = ScheduleEpisodeHelperScript.get_compact_label(
+				program,
+				{
+					"episode_global": int(slot_entry.get("episode_global", 0)),
+					"season_number": int(slot_entry.get("season_number", 0)),
+					"episode_number": int(slot_entry.get("episode_number", 0))
+				}
+			)
+			if not episode_label.is_empty():
+				parts.append(episode_label)
 	if duration_minutes > 0:
 		parts.append("%d min" % duration_minutes)
 	return " | ".join(parts)
