@@ -2,6 +2,7 @@ class_name TVDayScheduleBuilder
 extends RefCounted
 
 const AIScheduleGeneratorScript = preload("res://scripts/core/ai_schedule_generator.gd")
+const ProgramDetailPopupScript = preload("res://scripts/ui/program_detail_popup.gd")
 
 const DAYS: Array[String] = [
 	"Lundi",
@@ -110,7 +111,7 @@ static func _show_day(
 		if not editable and slot_text.begins_with("↳"):
 			continue
 
-		_add_slot(schedule, slot_index, editable, slot_text)
+		_add_slot(schedule, slot_index, editable, slot_text, programs)
 
 	scroll.scroll_vertical = 0
 
@@ -143,7 +144,8 @@ static func _add_slot(
 	parent: VBoxContainer,
 	slot_index: int,
 	editable: bool,
-	slot_text: String
+	slot_text: String,
+	programs: Array[Dictionary]
 ) -> void:
 	var total_minutes: int = slot_index * 30
 	var hour: int = int(total_minutes / 60)
@@ -166,12 +168,46 @@ static func _add_slot(
 		slot_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		slot_button.custom_minimum_size = Vector2(0, 38)
 		row.add_child(slot_button)
-	else:
-		var slot_label: Label = Label.new()
-		slot_label.text = slot_text
-		slot_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		slot_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		row.add_child(slot_label)
+		return
+
+	if slot_text == "Vide":
+		var empty_label: Label = Label.new()
+		empty_label.text = slot_text
+		empty_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(empty_label)
+		return
+
+	var program: Dictionary = _find_program_by_name(programs, slot_text)
+	if program.is_empty():
+		var fallback_label: Label = Label.new()
+		fallback_label.text = slot_text
+		fallback_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		fallback_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(fallback_label)
+		return
+
+	var program_button: Button = Button.new()
+	program_button.text = "%s (%d min)" % [
+		String(program.get("name", slot_text)),
+		int(program.get("duration_minutes", 0))
+	]
+	program_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	program_button.flat = true
+	program_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	program_button.custom_minimum_size = Vector2(0, 38)
+	var captured_program: Dictionary = program.duplicate(true)
+	program_button.pressed.connect(func() -> void:
+		ProgramDetailPopupScript.open(program_button, captured_program)
+	)
+	row.add_child(program_button)
+
+
+static func _find_program_by_name(programs: Array[Dictionary], program_name: String) -> Dictionary:
+	for program: Dictionary in programs:
+		if String(program.get("name", "")) == program_name:
+			return program.duplicate(true)
+	return {}
 
 
 static func _clear(parent: VBoxContainer) -> void:
