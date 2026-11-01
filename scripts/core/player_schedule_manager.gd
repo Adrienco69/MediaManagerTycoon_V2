@@ -94,7 +94,8 @@ func place_program(
 	week_number: int,
 	day_index: int,
 	start_slot: int,
-	program: Dictionary
+	program: Dictionary,
+	episode_data: Dictionary = {}
 ) -> bool:
 	if not can_place_program(channel_number, week_number, day_index, start_slot, program):
 		return false
@@ -105,6 +106,9 @@ func place_program(
 	var day: Array[Dictionary] = get_day_slots(channel_number, week_number, day_index)
 	var program_id: String = String(program.get("id", ""))
 	var program_name: String = String(program.get("name", "Programme"))
+	var episode_global: int = int(episode_data.get("episode_global", 0))
+	var season_number: int = int(episode_data.get("season_number", 0))
+	var episode_number: int = int(episode_data.get("episode_number", 0))
 
 	day[start_slot] = {
 		"kind": "start",
@@ -112,7 +116,10 @@ func place_program(
 		"program_name": program_name,
 		"duration_minutes": duration_minutes,
 		"start_slot": start_slot,
-		"slots_count": slots_needed
+		"slots_count": slots_needed,
+		"episode_global": episode_global,
+		"season_number": season_number,
+		"episode_number": episode_number
 	}
 
 	for slot_index: int in range(start_slot + 1, start_slot + slots_needed):
@@ -121,7 +128,10 @@ func place_program(
 			"program_id": program_id,
 			"program_name": program_name,
 			"duration_minutes": duration_minutes,
-			"start_slot": start_slot
+			"start_slot": start_slot,
+			"episode_global": episode_global,
+			"season_number": season_number,
+			"episode_number": episode_number
 		}
 
 	_days[key] = day
