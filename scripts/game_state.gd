@@ -133,6 +133,33 @@ func get_active_productions() -> Array[Dictionary]:
 	return _production_manager.get_active_productions()
 
 
+func get_program(program_id: String) -> Dictionary:
+	return _production_manager.get_program(program_id)
+
+
+func record_program_broadcast(
+	program_id: String,
+	season_number: int,
+	episode_number: int,
+	date_text: String,
+	time_text: String,
+	channel_name: String,
+	broadcast_type: String
+) -> bool:
+	var recorded: bool = _production_manager.record_broadcast(
+		program_id,
+		season_number,
+		episode_number,
+		date_text,
+		time_text,
+		channel_name,
+		broadcast_type
+	)
+	if recorded:
+		programs_changed.emit()
+	return recorded
+
+
 func get_zap_channels() -> Array[Dictionary]:
 	return _mmtn_registry.get_channels()
 
