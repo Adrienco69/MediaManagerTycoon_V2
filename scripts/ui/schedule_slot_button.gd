@@ -262,20 +262,30 @@ func _open_delete_confirmation() -> void:
 	if program_value is Dictionary:
 		program_name = String((program_value as Dictionary).get("name", program_name))
 
+	var automation_id: String = String(source_data.get("automation_id", ""))
+	var is_automatic: bool = not automation_id.is_empty()
+
 	var dialog: ConfirmationDialog = ConfirmationDialog.new()
-	dialog.title = "Supprimer la diffusion ?"
-	dialog.dialog_text = "Voulez-vous supprimer %s de la grille ?\nLe programme restera dans votre bibliothèque." % program_name
-	dialog.ok_button_text = "Supprimer"
+	dialog.title = "Supprimer la programmation ?" if is_automatic else "Supprimer la diffusion ?"
+	if is_automatic:
+		dialog.dialog_text = "Cette diffusion fait partie d'une programmation automatique.\nVoulez-vous supprimer toutes les diffusions automatiques liées à %s ?\nLe programme restera dans votre bibliothèque." % program_name
+	else:
+		dialog.dialog_text = "Voulez-vous supprimer %s de la grille ?\nLe programme restera dans votre bibliothèque." % program_name
+	dialog.ok_button_text = "Tout supprimer" if is_automatic else "Supprimer"
 	dialog.cancel_button_text = "Annuler"
 	add_child(dialog)
 
 	dialog.confirmed.connect(func() -> void:
-		var removed: bool = GameState.remove_scheduled_program(
-			channel,
-			week_number,
-			day_index,
-			int(source_data.get("source_slot", slot_index))
-		)
+		var removed: bool = false
+		if is_automatic:
+			removed = _remove_automatic_group(automation_id)
+		else:
+			removed = GameState.remove_scheduled_program(
+				channel,
+				week_number,
+				day_index,
+				int(source_data.get("source_slot", slot_index))
+			)
 		if removed and refresh_callback.is_valid():
 			refresh_callback.call()
 		if is_instance_valid(dialog):
@@ -285,7 +295,37 @@ func _open_delete_confirmation() -> void:
 		if is_instance_valid(dialog):
 			dialog.queue_free()
 	)
-	dialog.popup_centered(Vector2i(520, 220))
+	dialog.popup_centered(Vector2i(560, 240))
+
+
+func _remove_automatic_group(automation_id: String) -> bool:
+	if automation_id.is_empty():
+		return false
+
+	var removed_any: bool = false
+	for target_week: int in range(1, 53):
+		for target_day: int in range(7):
+			var day_slots: Array[Dictionary] = GameState.get_player_day_schedule(
+				channel,
+				target_week,
+				target_day
+			)
+			for target_slot: int in range(day_slots.size()):
+				var entry: Dictionary = day_slots[target_slot]
+				if entry.is_empty():
+					continue
+				if String(entry.get("kind", "")) != "start":
+					continue
+				if String(entry.get("automation_id", "")) != automation_id:
+					continue
+				if GameState.remove_scheduled_program(
+					channel,
+					target_week,
+					target_day,
+					target_slot
+				):
+					removed_any = true
+	return removed_any
 
 
 func _get_source_drag_data() -> Dictionary:
@@ -321,8 +361,12 @@ func _get_source_drag_data() -> Dictionary:
 		"episode_data": {
 			"episode_global": int(start_entry.get("episode_global", 0)),
 			"season_number": int(start_entry.get("season_number", 0)),
-			"episode_number": int(start_entry.get("episode_number", 0))
+			"episode_number": int(start_entry.get("episode_number", 0)),
+			"automation_id": String(start_entry.get("automation_id", "")),
+			"automation_frequency": String(start_entry.get("automation_frequency", ""))
 		},
+		"automation_id": String(start_entry.get("automation_id", "")),
+		"automation_frequency": String(start_entry.get("automation_frequency", "")),
 		"source_week": week_number,
 		"source_day": day_index,
 		"source_slot": source_start
