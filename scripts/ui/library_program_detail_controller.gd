@@ -57,8 +57,19 @@ static func render(
 	tab_content.add_theme_constant_override("separation", 12)
 	dynamic.add_child(tab_content)
 
-	var show_info: Callable
+	var callbacks: Dictionary = {}
 	var manage_seasons_callable: Callable = on_manage_seasons
+
+	callbacks["show_info"] = func() -> void:
+		_clear_holder(tab_content)
+		page_description.text = "Fiche du programme | informations et historique des diffusions."
+		info_button.disabled = true
+		production_diffusion_button.disabled = false
+		season_diffusion_button.disabled = false
+		var current_program: Dictionary = GameState.get_program(String(program.get("id", "")))
+		if current_program.is_empty():
+			current_program = program
+		_build_program_info(tab_content, current_program, manage_seasons_callable)
 
 	if not manage_seasons_callable.is_valid() and _can_manage_seasons(program):
 		manage_seasons_callable = func() -> void:
@@ -73,7 +84,10 @@ static func render(
 				tab_content,
 				page_description,
 				current_program,
-				func() -> void: show_info.call(),
+				func() -> void:
+					var show_info_callable: Callable = callbacks.get("show_info", Callable())
+					if show_info_callable.is_valid():
+						show_info_callable.call(),
 				func(season_number: int, codes: Array[int]) -> String:
 					var error_text: String = GameState._production_manager.set_editorial_season(
 						String(current_program.get("id", "")),
@@ -85,16 +99,7 @@ static func render(
 					return error_text
 			)
 
-	show_info = func() -> void:
-		_clear_holder(tab_content)
-		page_description.text = "Fiche du programme | informations et historique des diffusions."
-		info_button.disabled = true
-		production_diffusion_button.disabled = false
-		season_diffusion_button.disabled = false
-		var current_program: Dictionary = GameState.get_program(String(program.get("id", "")))
-		if current_program.is_empty():
-			current_program = program
-		_build_program_info(tab_content, current_program, manage_seasons_callable)
+	var show_info: Callable = callbacks["show_info"] as Callable
 
 	var show_production_diffusion: Callable = func() -> void:
 		_clear_holder(tab_content)
