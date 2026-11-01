@@ -74,7 +74,10 @@ static func build(parent: Control, editable: bool, programs: Array[Dictionary]) 
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.custom_minimum_size = Vector2(0, 38)
+
+		var captured_program: Dictionary = program.duplicate(true)
+		var captured_button: Button = button
 		button.pressed.connect(func() -> void:
-			ProgramDetailPopupScript.open(button, program)
+			ProgramDetailPopupScript.open(captured_button, captured_program)
 		)
 		list.add_child(button)
