@@ -61,8 +61,9 @@ static func render(
 
 	var selected_codes: Array[int] = []
 	var available_codes: Array[int] = _get_available_codes(program, int(season_input.value))
+	var callbacks: Dictionary = {}
 
-	var refresh_select: Callable = func() -> void:
+	callbacks["refresh_select"] = func() -> void:
 		code_select.clear()
 		for code_prod: int in available_codes:
 			if selected_codes.has(code_prod):
@@ -72,7 +73,7 @@ static func render(
 		code_select.disabled = code_select.item_count == 0
 		add_button.disabled = code_select.item_count == 0
 
-	var refresh_selected_list: Callable = func() -> void:
+	callbacks["refresh_selected_list"] = func() -> void:
 		for child: Node in selected_list.get_children():
 			selected_list.remove_child(child)
 			child.queue_free()
@@ -96,14 +97,21 @@ static func render(
 
 			var remove_button: Button = Button.new()
 			remove_button.text = "Retirer"
+			var captured_index: int = index
 			remove_button.pressed.connect(func() -> void:
-				selected_codes.remove_at(index)
-				refresh_selected_list.call()
-				refresh_select.call()
+				if captured_index < 0 or captured_index >= selected_codes.size():
+					return
+				selected_codes.remove_at(captured_index)
+				var refresh_list_callable: Callable = callbacks.get("refresh_selected_list", Callable())
+				if refresh_list_callable.is_valid():
+					refresh_list_callable.call()
+				var refresh_select_callable: Callable = callbacks.get("refresh_select", Callable())
+				if refresh_select_callable.is_valid():
+					refresh_select_callable.call()
 			)
 			row.add_child(remove_button)
 
-	var reload_for_season: Callable = func() -> void:
+	callbacks["reload_for_season"] = func() -> void:
 		selected_codes.clear()
 		available_codes = _get_available_codes(program, int(season_input.value))
 		var existing_codes: Array[int] = _get_existing_codes_for_season(program, int(season_input.value))
@@ -112,11 +120,17 @@ static func render(
 			if not available_codes.has(code_prod):
 				available_codes.append(code_prod)
 		available_codes.sort()
-		refresh_selected_list.call()
-		refresh_select.call()
+		var refresh_list_callable: Callable = callbacks.get("refresh_selected_list", Callable())
+		if refresh_list_callable.is_valid():
+			refresh_list_callable.call()
+		var refresh_select_callable: Callable = callbacks.get("refresh_select", Callable())
+		if refresh_select_callable.is_valid():
+			refresh_select_callable.call()
 
 	season_input.value_changed.connect(func(_value: float) -> void:
-		reload_for_season.call()
+		var reload_callable: Callable = callbacks.get("reload_for_season", Callable())
+		if reload_callable.is_valid():
+			reload_callable.call()
 	)
 
 	add_button.pressed.connect(func() -> void:
@@ -126,8 +140,12 @@ static func render(
 		if code_prod <= 0 or selected_codes.has(code_prod):
 			return
 		selected_codes.append(code_prod)
-		refresh_selected_list.call()
-		refresh_select.call()
+		var refresh_list_callable: Callable = callbacks.get("refresh_selected_list", Callable())
+		if refresh_list_callable.is_valid():
+			refresh_list_callable.call()
+		var refresh_select_callable: Callable = callbacks.get("refresh_select", Callable())
+		if refresh_select_callable.is_valid():
+			refresh_select_callable.call()
 	)
 
 	var info_label: Label = Label.new()
@@ -158,7 +176,9 @@ static func render(
 		error_label.text = "Saison enregistrée."
 	)
 
-	reload_for_season.call()
+	var reload_callable: Callable = callbacks.get("reload_for_season", Callable())
+	if reload_callable.is_valid():
+		reload_callable.call()
 
 
 static func clear(content_container: VBoxContainer) -> void:
