@@ -2,6 +2,7 @@ class_name TVDayScheduleBuilder
 extends RefCounted
 
 const AIScheduleGeneratorScript = preload("res://scripts/core/ai_schedule_generator.gd")
+const ZapProgramLabelScript = preload("res://scripts/ui/zap_program_label.gd")
 
 const DAYS: Array[String] = [
 	"Lundi",
@@ -125,6 +126,9 @@ static func _show_day(
 			editable,
 			slot_text,
 			programs,
+			channel,
+			week_number,
+			day_index,
 			on_program_selected
 		)
 
@@ -161,6 +165,9 @@ static func _add_slot(
 	editable: bool,
 	slot_text: String,
 	programs: Array[Dictionary],
+	channel: Dictionary,
+	week_number: int,
+	day_index: int,
 	on_program_selected: Callable
 ) -> void:
 	var total_minutes: int = slot_index * 30
@@ -204,10 +211,13 @@ static func _add_slot(
 		return
 
 	var program_button: Button = Button.new()
-	program_button.text = "%s (%d min)" % [
-		String(program.get("name", slot_text)),
-		int(program.get("duration_minutes", 0))
-	]
+	program_button.text = ZapProgramLabelScript.build(
+		program,
+		channel,
+		week_number,
+		day_index,
+		slot_index
+	)
 	program_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	program_button.flat = true
 	program_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
