@@ -14,7 +14,8 @@ static func render(
 	page_description: Label,
 	program: Dictionary,
 	on_back: Callable,
-	back_button_text: String = "← Retour à la Bibliothèque"
+	back_button_text: String = "← Retour à la Bibliothèque",
+	on_manage_seasons: Callable = Callable()
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -60,7 +61,7 @@ static func render(
 		info_button.disabled = true
 		production_diffusion_button.disabled = false
 		season_diffusion_button.disabled = false
-		_build_program_info(tab_content, program)
+		_build_program_info(tab_content, program, on_manage_seasons)
 
 	var show_production_diffusion: Callable = func() -> void:
 		_clear_holder(tab_content)
@@ -89,7 +90,7 @@ static func clear(content_container: VBoxContainer) -> void:
 		existing.queue_free()
 
 
-static func _build_program_info(parent: VBoxContainer, program: Dictionary) -> void:
+static func _build_program_info(parent: VBoxContainer, program: Dictionary, on_manage_seasons: Callable) -> void:
 	var table: GridContainer = GridContainer.new()
 	table.columns = 2
 	table.add_theme_constant_override("h_separation", 0)
@@ -100,8 +101,40 @@ static func _build_program_info(parent: VBoxContainer, program: Dictionary) -> v
 	_add_info_row(table, "Format", String(program.get("format", "")))
 	_add_info_row(table, "Durée", "%d min" % int(program.get("duration_minutes", 0)))
 	_add_info_row(table, "Unités disponibles", _get_available_unit_text(program))
-	_add_info_row(table, "Saison(s) éditoriale(s)", _get_season_text(program))
+	if _can_manage_seasons(program) and on_manage_seasons.is_valid():
+		_add_season_info_row(table, _get_season_text(program), on_manage_seasons)
+	else:
+		_add_info_row(table, "Saison(s) éditoriale(s)", _get_season_text(program))
 	_add_info_row(table, "État", ProgramStatusScript.get_text(program))
+
+
+static func _can_manage_seasons(program: Dictionary) -> bool:
+	var format_name: String = String(program.get("format", ""))
+	if format_name == "Film" or format_name == "Téléfilm":
+		return false
+	return int(program.get("units_total", program.get("episodes_total", 0))) > 1
+
+
+static func _add_season_info_row(table: GridContainer, value_text: String, on_manage_seasons: Callable) -> void:
+	_add_panel_label(table, "Saison(s) éditoriale(s)", INFO_WIDTHS[0], true)
+
+	var panel: PanelContainer = _create_panel(INFO_WIDTHS[1])
+	table.add_child(panel)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	panel.add_child(row)
+
+	var value_label := Label.new()
+	value_label.text = value_text
+	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(value_label)
+
+	var manage_button := Button.new()
+	manage_button.text = "Gérer les saisons"
+	manage_button.custom_minimum_size = Vector2(160, 34)
+	manage_button.pressed.connect(on_manage_seasons)
+	row.add_child(manage_button)
 
 
 static func _get_available_unit_text(program: Dictionary) -> String:
@@ -137,10 +170,9 @@ static func _add_info_row(table: GridContainer, label_text: String, value_text: 
 	_add_panel_label(table, value_text, INFO_WIDTHS[1], false)
 
 
-static func _add_panel_label(table: GridContainer, text: String, width: float, is_header: bool) -> void:
+static func _create_panel(width: float) -> PanelContainer:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(width, 44)
-
 	var box: StyleBoxFlat = StyleBoxFlat.new()
 	box.bg_color = Color(1, 1, 1, 0.025)
 	box.border_color = Color(1, 1, 1, 0.18)
@@ -153,6 +185,11 @@ static func _add_panel_label(table: GridContainer, text: String, width: float, i
 	box.content_margin_top = 7.0
 	box.content_margin_bottom = 7.0
 	panel.add_theme_stylebox_override("panel", box)
+	return panel
+
+
+static func _add_panel_label(table: GridContainer, text: String, width: float, is_header: bool) -> void:
+	var panel: PanelContainer = _create_panel(width)
 	table.add_child(panel)
 
 	var label: Label = Label.new()
