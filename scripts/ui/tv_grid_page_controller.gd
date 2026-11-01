@@ -98,12 +98,6 @@ static func render(
 	catalog_holder.size_flags_stretch_ratio = 1.0
 	catalog_holder.custom_minimum_size = Vector2(220, 0)
 	body.add_child(catalog_holder)
-	ProgramCatalogPanelScript.build(
-		catalog_holder,
-		editable,
-		displayed_programs,
-		on_program_selected
-	)
 
 	var scheduler_holder: VBoxContainer = VBoxContainer.new()
 	scheduler_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -117,8 +111,20 @@ static func render(
 	schedule_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scheduler_holder.add_child(schedule_holder)
 
+	var rebuild_catalog: Callable = func() -> void:
+		_clear_holder(catalog_holder)
+		ProgramCatalogPanelScript.build(
+			catalog_holder,
+			editable,
+			displayed_programs,
+			on_program_selected,
+			channel,
+			int(view_state.get("week_number", 1))
+		)
+
 	var rebuild_schedule: Callable = func(week_number: int) -> void:
 		view_state["week_number"] = week_number
+		rebuild_catalog.call()
 		_clear_holder(schedule_holder)
 		_clear_holder(days_holder)
 		DayScheduleBuilderScript.build(
@@ -129,7 +135,8 @@ static func render(
 			displayed_programs,
 			on_program_selected,
 			days_holder,
-			String(view_state.get("time_range_id", "")) if editable else ""
+			String(view_state.get("time_range_id", "")) if editable else "",
+			rebuild_catalog
 		)
 
 	if editable and time_range_holder != null:
@@ -183,6 +190,9 @@ static func _get_displayed_programs(
 	if editable or not result.is_empty():
 		return result
 
+	if _is_player_channel(channel):
+		return GameState.get_group_programs()
+
 	var channel_programs_value: Variant = channel.get("programs", [])
 	if channel_programs_value is Array:
 		for value: Variant in channel_programs_value:
@@ -190,6 +200,13 @@ static func _get_displayed_programs(
 				result.append((value as Dictionary).duplicate(true))
 
 	return result
+
+
+static func _is_player_channel(channel: Dictionary) -> bool:
+	var player_channel: Dictionary = GameState.get_first_channel()
+	if player_channel.is_empty():
+		return false
+	return int(channel.get("mmtn_number", 0)) == int(player_channel.get("mmtn_number", -1))
 
 
 static func _get_description(channel: Dictionary, editable: bool) -> String:
