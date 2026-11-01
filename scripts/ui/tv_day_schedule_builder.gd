@@ -1,6 +1,8 @@
 class_name TVDayScheduleBuilder
 extends RefCounted
 
+const AIScheduleGeneratorScript = preload("res://scripts/core/ai_schedule_generator.gd")
+
 const DAYS: Array[String] = [
 	"Lundi",
 	"Mardi",
@@ -15,7 +17,9 @@ const DAYS: Array[String] = [
 static func build(
 	parent: VBoxContainer,
 	week_number: int,
-	editable: bool
+	editable: bool,
+	channel: Dictionary,
+	programs: Array[Dictionary]
 ) -> void:
 	var day_buttons: Array[Button] = []
 	var day_row: HBoxContainer = HBoxContainer.new()
@@ -47,16 +51,38 @@ static func build(
 
 		var captured_day: int = day_index
 		button.pressed.connect(func() -> void:
-			_show_day(captured_day, week_number, editable, day_buttons, selected_day_label, schedule, scroll)
+			_show_day(
+				captured_day,
+				week_number,
+				editable,
+				channel,
+				programs,
+				day_buttons,
+				selected_day_label,
+				schedule,
+				scroll
+			)
 		)
 
-	_show_day(0, week_number, editable, day_buttons, selected_day_label, schedule, scroll)
+	_show_day(
+		0,
+		week_number,
+		editable,
+		channel,
+		programs,
+		day_buttons,
+		selected_day_label,
+		schedule,
+		scroll
+	)
 
 
 static func _show_day(
 	day_index: int,
 	week_number: int,
 	editable: bool,
+	channel: Dictionary,
+	programs: Array[Dictionary],
 	day_buttons: Array[Button],
 	selected_day_label: Label,
 	schedule: VBoxContainer,
@@ -68,13 +94,50 @@ static func _show_day(
 	selected_day_label.text = "%s | Semaine %d" % [DAYS[day_index], week_number]
 	_clear(schedule)
 
+	var slot_texts: Array[String] = _build_slot_texts(
+		channel,
+		programs,
+		week_number,
+		day_index,
+		editable
+	)
+
 	for slot_index: int in range(48):
-		_add_slot(schedule, slot_index, editable)
+		_add_slot(schedule, slot_index, editable, slot_texts[slot_index])
 
 	scroll.scroll_vertical = 0
 
 
-static func _add_slot(parent: VBoxContainer, slot_index: int, editable: bool) -> void:
+static func _build_slot_texts(
+	channel: Dictionary,
+	programs: Array[Dictionary],
+	week_number: int,
+	day_index: int,
+	editable: bool
+) -> Array[String]:
+	var empty_slots: Array[String] = []
+	empty_slots.resize(48)
+	for index: int in range(48):
+		empty_slots[index] = "Vide"
+
+	if editable or not bool(channel.get("auto_schedule", false)):
+		return empty_slots
+
+	var schedule_seed: int = int(channel.get("schedule_seed", 1))
+	return AIScheduleGeneratorScript.build_day(
+		programs,
+		schedule_seed,
+		week_number,
+		day_index
+	)
+
+
+static func _add_slot(
+	parent: VBoxContainer,
+	slot_index: int,
+	editable: bool,
+	slot_text: String
+) -> void:
 	var total_minutes: int = slot_index * 30
 	var hour: int = int(total_minutes / 60)
 	var minute: int = total_minutes % 60
@@ -92,13 +155,13 @@ static func _add_slot(parent: VBoxContainer, slot_index: int, editable: bool) ->
 
 	if editable:
 		var slot_button: Button = Button.new()
-		slot_button.text = "Vide"
+		slot_button.text = slot_text
 		slot_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		slot_button.custom_minimum_size = Vector2(0, 38)
 		row.add_child(slot_button)
 	else:
 		var slot_label: Label = Label.new()
-		slot_label.text = "Vide"
+		slot_label.text = slot_text
 		slot_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		slot_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		row.add_child(slot_label)
