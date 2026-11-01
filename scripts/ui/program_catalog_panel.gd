@@ -43,7 +43,7 @@ static func build(
 
 	var hint: Label = Label.new()
 	if editable:
-		hint.text = "Glissez un programme sur une case de la grille. Cliquez sur son titre pour voir sa fiche."
+		hint.text = "Cliquez sur une case horaire pour choisir un programme, ou glissez un titre sur la grille. Cliquez sur un titre pour voir sa fiche."
 	else:
 		hint.text = "Catalogue non modifiable. Cliquez sur un titre pour voir sa fiche."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
