@@ -240,7 +240,8 @@ func schedule_program(
 	week_number: int,
 	day_index: int,
 	slot_index: int,
-	program: Dictionary
+	program: Dictionary,
+	episode_data: Dictionary = {}
 ) -> bool:
 	var channel_number: int = int(channel.get("mmtn_number", 0))
 	var placed: bool = _player_schedule_manager.place_program(
@@ -248,7 +249,8 @@ func schedule_program(
 		week_number,
 		day_index,
 		slot_index,
-		program
+		program,
+		episode_data
 	)
 	if placed:
 		schedule_changed.emit()
