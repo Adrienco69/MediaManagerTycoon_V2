@@ -5,6 +5,15 @@ const ScheduleEpisodeHelperScript = preload("res://scripts/ui/schedule_episode_h
 
 const FREQUENCY_WEEKLY: int = 0
 const FREQUENCY_DAILY: int = 1
+const DAY_NAMES: Array[String] = [
+	"Lundi",
+	"Mardi",
+	"Mercredi",
+	"Jeudi",
+	"Vendredi",
+	"Samedi",
+	"Dimanche"
+]
 
 
 static func open(
@@ -14,7 +23,8 @@ static func open(
 	day_index: int,
 	slot_index: int,
 	program: Dictionary,
-	refresh_callback: Callable
+	refresh_callback: Callable,
+	replace_existing: bool = false
 ) -> void:
 	if anchor == null:
 		return
@@ -25,7 +35,15 @@ static func open(
 
 	var episode_count: int = ScheduleEpisodeHelperScript.get_episode_count(program)
 	if episode_count <= 0:
-		_place_without_episode(channel, week_number, day_index, slot_index, program, refresh_callback)
+		_place_without_episode(
+			channel,
+			week_number,
+			day_index,
+			slot_index,
+			program,
+			refresh_callback,
+			replace_existing
+		)
 		return
 
 	var popup: PopupPanel = PopupPanel.new()
@@ -120,7 +138,10 @@ static func open(
 	episode_list.add_theme_constant_override("separation", 6)
 	scroll.add_child(episode_list)
 
-	var existing_start: bool = _is_existing_start(channel, week_number, day_index, slot_index)
+	var editing_existing: bool = (
+		_is_existing_start(channel, week_number, day_index, slot_index)
+		and not replace_existing
+	)
 	for global_episode: int in range(1, episode_count + 1):
 		var episode_data: Dictionary = ScheduleEpisodeHelperScript.get_episode_data(program, global_episode)
 		if episode_data.is_empty():
@@ -140,10 +161,10 @@ static func open(
 		var auto_button: Button = Button.new()
 		auto_button.text = "Automatiser depuis ici"
 		auto_button.custom_minimum_size = Vector2(190, 40)
-		auto_button.disabled = existing_start
+		auto_button.disabled = editing_existing
 		auto_button.tooltip_text = (
-			"Déplacez d'abord la diffusion si ce créneau contient déjà un épisode."
-			if existing_start
+			"Ce créneau sert actuellement à modifier l'épisode déjà programmé."
+			if editing_existing
 			else "Programme automatiquement les épisodes suivants."
 		)
 		episode_row.add_child(auto_button)
@@ -152,12 +173,21 @@ static func open(
 		var captured_global_episode: int = global_episode
 		episode_button.pressed.connect(func() -> void:
 			var saved: bool = false
-			if existing_start:
+			if editing_existing:
 				saved = GameState.update_scheduled_episode(
 					channel,
 					week_number,
 					day_index,
 					slot_index,
+					captured_episode
+				)
+			elif replace_existing:
+				saved = GameState.replace_scheduled_program(
+					channel,
+					week_number,
+					day_index,
+					slot_index,
+					program,
 					captured_episode
 				)
 			else:
@@ -187,7 +217,8 @@ static func open(
 				program,
 				captured_global_episode,
 				requested_quantity,
-				frequency_id
+				frequency_id,
+				replace_existing
 			)
 			if refresh_callback.is_valid():
 				refresh_callback.call()
@@ -216,7 +247,8 @@ static func _auto_schedule_episodes(
 	program: Dictionary,
 	start_global_episode: int,
 	requested_quantity: int,
-	frequency_id: int
+	frequency_id: int,
+	replace_first: bool = false
 ) -> Dictionary:
 	var episode_count: int = ScheduleEpisodeHelperScript.get_episode_count(program)
 	var quantity: int = mini(
@@ -243,20 +275,6 @@ static func _auto_schedule_episodes(
 				stop_reason = "La fin de l'année 1 a été atteinte."
 				break
 
-		if not GameState.can_schedule_program(
-			channel,
-			target_week,
-			target_day,
-			slot_index,
-			program
-		):
-			stop_reason = "Un créneau est déjà occupé en semaine %d, %s à %s." % [
-				target_week,
-				_get_day_name(target_day),
-				_get_time_text(slot_index)
-			]
-			break
-
 		var global_episode: int = start_global_episode + offset
 		var episode_data: Dictionary = ScheduleEpisodeHelperScript.get_episode_data(
 			program,
@@ -266,14 +284,39 @@ static func _auto_schedule_episodes(
 			stop_reason = "Aucun épisode disponible pour poursuivre l'automatisation."
 			break
 
-		var placed: bool = GameState.schedule_program(
-			channel,
-			target_week,
-			target_day,
-			slot_index,
-			program,
-			episode_data
-		)
+		var placed: bool = false
+		if offset == 0 and replace_first:
+			placed = GameState.replace_scheduled_program(
+				channel,
+				target_week,
+				target_day,
+				slot_index,
+				program,
+				episode_data
+			)
+		else:
+			if not GameState.can_schedule_program(
+				channel,
+				target_week,
+				target_day,
+				slot_index,
+				program
+			):
+				stop_reason = "Un créneau est déjà occupé en semaine %d, %s à %s." % [
+					target_week,
+					_get_day_name(target_day),
+					_get_time_text(slot_index)
+				]
+				break
+			placed = GameState.schedule_program(
+				channel,
+				target_week,
+				target_day,
+				slot_index,
+				program,
+				episode_data
+			)
+
 		if not placed:
 			stop_reason = "La programmation s'est arrêtée sur un créneau incompatible."
 			break
@@ -339,30 +382,33 @@ static func _place_without_episode(
 	day_index: int,
 	slot_index: int,
 	program: Dictionary,
-	refresh_callback: Callable
+	refresh_callback: Callable,
+	replace_existing: bool = false
 ) -> void:
-	var placed: bool = GameState.schedule_program(
-		channel,
-		week_number,
-		day_index,
-		slot_index,
-		program,
-		{}
-	)
+	var placed: bool = false
+	if replace_existing:
+		placed = GameState.replace_scheduled_program(
+			channel,
+			week_number,
+			day_index,
+			slot_index,
+			program,
+			{}
+		)
+	else:
+		placed = GameState.schedule_program(
+			channel,
+			week_number,
+			day_index,
+			slot_index,
+			program,
+			{}
+		)
 	if placed and refresh_callback.is_valid():
 		refresh_callback.call()
 
 
 static func _get_day_name(day_index: int) -> String:
-	const DAY_NAMES: Array[String] = [
-		"Lundi",
-		"Mardi",
-		"Mercredi",
-		"Jeudi",
-		"Vendredi",
-		"Samedi",
-		"Dimanche"
-	]
 	if day_index < 0 or day_index >= DAY_NAMES.size():
 		return "Jour"
 	return DAY_NAMES[day_index]
