@@ -1,6 +1,8 @@
 class_name ProgramCatalogPanel
 extends RefCounted
 
+const ProgramDetailPopupScript = preload("res://scripts/ui/program_detail_popup.gd")
+
 
 static func build(parent: Control, editable: bool, programs: Array[Dictionary]) -> void:
 	var panel: PanelContainer = PanelContainer.new()
@@ -36,9 +38,9 @@ static func build(parent: Control, editable: bool, programs: Array[Dictionary]) 
 
 	var hint: Label = Label.new()
 	if editable:
-		hint.text = "Catalogue du groupe. Le glisser-déposer vers la grille sera branché ensuite."
+		hint.text = "Catalogue du groupe. Cliquez sur un titre pour voir sa fiche. Le glisser-déposer sera branché ensuite."
 	else:
-		hint.text = "Catalogue non modifiable dans Zap'Chaine."
+		hint.text = "Catalogue non modifiable. Cliquez sur un titre pour voir sa fiche."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(hint)
 
@@ -65,12 +67,14 @@ static func build(parent: Control, editable: bool, programs: Array[Dictionary]) 
 
 	for program: Dictionary in programs:
 		var button: Button = Button.new()
-		button.text = "%s | %d min" % [
+		button.text = "%s (%d min)" % [
 			String(program.get("name", "")),
 			int(program.get("duration_minutes", 0))
 		]
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.disabled = not editable
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.custom_minimum_size = Vector2(0, 38)
+		button.pressed.connect(func() -> void:
+			ProgramDetailPopupScript.open(button, program)
+		)
 		list.add_child(button)
