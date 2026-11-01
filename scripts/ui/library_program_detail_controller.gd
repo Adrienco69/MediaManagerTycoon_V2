@@ -18,7 +18,7 @@ static func render(
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	page_description.text = "Fiche du programme | informations, épisodes et diffusions."
+	page_description.text = "Fiche du programme | informations et historique des diffusions."
 
 	var dynamic: VBoxContainer = VBoxContainer.new()
 	dynamic.name = DYNAMIC_NODE_NAME
@@ -41,10 +41,15 @@ static func render(
 	info_button.custom_minimum_size = Vector2(180, NAV_BUTTON_HEIGHT)
 	nav_row.add_child(info_button)
 
-	var episodes_button: Button = Button.new()
-	episodes_button.text = "Épisodes & diffusions"
-	episodes_button.custom_minimum_size = Vector2(210, NAV_BUTTON_HEIGHT)
-	nav_row.add_child(episodes_button)
+	var production_diffusion_button: Button = Button.new()
+	production_diffusion_button.text = "Diffusion par épisodes"
+	production_diffusion_button.custom_minimum_size = Vector2(220, NAV_BUTTON_HEIGHT)
+	nav_row.add_child(production_diffusion_button)
+
+	var season_diffusion_button: Button = Button.new()
+	season_diffusion_button.text = "Diffusion par saison"
+	season_diffusion_button.custom_minimum_size = Vector2(210, NAV_BUTTON_HEIGHT)
+	nav_row.add_child(season_diffusion_button)
 
 	var tab_content: VBoxContainer = VBoxContainer.new()
 	tab_content.add_theme_constant_override("separation", 12)
@@ -53,17 +58,27 @@ static func render(
 	var show_info: Callable = func() -> void:
 		_clear_holder(tab_content)
 		info_button.disabled = true
-		episodes_button.disabled = false
+		production_diffusion_button.disabled = false
+		season_diffusion_button.disabled = false
 		_build_program_info(tab_content, program)
 
-	var show_episodes: Callable = func() -> void:
+	var show_production_diffusion: Callable = func() -> void:
 		_clear_holder(tab_content)
 		info_button.disabled = false
-		episodes_button.disabled = true
-		EpisodeTableScript.build(tab_content, program)
+		production_diffusion_button.disabled = true
+		season_diffusion_button.disabled = false
+		EpisodeTableScript.build_by_production(tab_content, program)
+
+	var show_season_diffusion: Callable = func() -> void:
+		_clear_holder(tab_content)
+		info_button.disabled = false
+		production_diffusion_button.disabled = false
+		season_diffusion_button.disabled = true
+		EpisodeTableScript.build_by_season(tab_content, program)
 
 	info_button.pressed.connect(show_info)
-	episodes_button.pressed.connect(show_episodes)
+	production_diffusion_button.pressed.connect(show_production_diffusion)
+	season_diffusion_button.pressed.connect(show_season_diffusion)
 	show_info.call()
 
 
@@ -84,14 +99,14 @@ static func _build_program_info(parent: VBoxContainer, program: Dictionary) -> v
 	_add_info_row(table, "Programme", String(program.get("name", "")))
 	_add_info_row(table, "Format", String(program.get("format", "")))
 	_add_info_row(table, "Durée", "%d min" % int(program.get("duration_minutes", 0)))
-	_add_info_row(table, "Épisodes disponibles", _get_available_episode_text(program))
-	_add_info_row(table, "Saison(s)", _get_season_text(program))
+	_add_info_row(table, "Unités disponibles", _get_available_unit_text(program))
+	_add_info_row(table, "Saison(s) éditoriale(s)", _get_season_text(program))
 	_add_info_row(table, "État", ProgramStatusScript.get_text(program))
 
 
-static func _get_available_episode_text(program: Dictionary) -> String:
-	var total: int = int(program.get("episodes_total", 0))
-	var available: int = int(program.get("episodes_available", 0))
+static func _get_available_unit_text(program: Dictionary) -> String:
+	var total: int = int(program.get("units_total", program.get("episodes_total", 0)))
+	var available: int = int(program.get("units_available", program.get("episodes_available", 0)))
 	if total <= 0:
 		return "Variable"
 	if available == total:
@@ -114,7 +129,7 @@ static func _get_season_text(program: Dictionary) -> String:
 				return "1 saison"
 			return "%d saisons" % season_data.size()
 
-	return "Saison non renseignée"
+	return "Aucun découpage en saison"
 
 
 static func _add_info_row(table: GridContainer, label_text: String, value_text: String) -> void:
