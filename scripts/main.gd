@@ -8,6 +8,7 @@ const GroupPageControllerScript = preload("res://scripts/ui/group_page_controlle
 const TVGridPageControllerScript = preload("res://scripts/ui/tv_grid_page_controller.gd")
 const ZapPageControllerScript = preload("res://scripts/ui/zap_page_controller.gd")
 const ProductionPageControllerScript = preload("res://scripts/ui/production_page_controller.gd")
+const LibraryPageControllerScript = preload("res://scripts/ui/library_page_controller.gd")
 const MainContentScrollScript = preload("res://scripts/ui/main_content_scroll.gd")
 
 @onready var background: ColorRect = $Background
@@ -33,6 +34,7 @@ const MainContentScrollScript = preload("res://scripts/ui/main_content_scroll.gd
 @onready var grid_button: Button = %GridButton
 @onready var zap_button: Button = %ZapButton
 @onready var production_button: Button = %ProductionButton
+@onready var library_button: Button = %LibraryButton
 @onready var content_margin: MarginContainer = $GameUI/RootVBox/MainPanel/ContentMargin
 @onready var content_container: VBoxContainer = $GameUI/RootVBox/MainPanel/ContentMargin/ContentVBox
 @onready var page_title: Label = %PageTitle
@@ -105,6 +107,7 @@ func _connect_buttons() -> void:
 	grid_button.pressed.connect(_show_grid)
 	zap_button.pressed.connect(_show_zap)
 	production_button.pressed.connect(_show_productions)
+	library_button.pressed.connect(_show_library)
 
 
 func _show_start_screen() -> void:
@@ -296,8 +299,26 @@ func _show_productions() -> void:
 	ProductionPageControllerScript.render(
 		content_container,
 		page_description,
-		GameState.get_group_programs(),
+		GameState.get_active_productions(),
 		_on_create_production_requested
+	)
+
+
+func _show_library() -> void:
+	_clear_dynamic_pages()
+	_scroll_main_to_top()
+	NavigationButtonStateScript.apply(_get_navigation_buttons(), library_button)
+	page_title.text = "Bibliothèque"
+
+	if not GameState.has_player_channel():
+		page_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		page_description.text = "Créez d'abord votre première chaîne."
+		return
+
+	LibraryPageControllerScript.render(
+		content_container,
+		page_description,
+		GameState.get_group_programs()
 	)
 
 
@@ -310,6 +331,7 @@ func _clear_dynamic_pages() -> void:
 	TVGridPageControllerScript.clear(content_container)
 	ZapPageControllerScript.clear(content_container)
 	ProductionPageControllerScript.clear(content_container)
+	LibraryPageControllerScript.clear(content_container)
 
 
 func _scroll_main_to_top() -> void:
@@ -322,7 +344,8 @@ func _get_navigation_buttons() -> Array[Button]:
 		group_button,
 		grid_button,
 		zap_button,
-		production_button
+		production_button,
+		library_button
 	]
 
 
