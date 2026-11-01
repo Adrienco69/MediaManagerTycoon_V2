@@ -61,7 +61,7 @@ static func open(
 	popup.add_child(margin)
 
 	var content: VBoxContainer = VBoxContainer.new()
-	content.custom_minimum_size = Vector2(620, 0)
+	content.custom_minimum_size = Vector2(700, 0)
 	content.add_theme_constant_override("separation", 10)
 	margin.add_child(content)
 
@@ -103,6 +103,53 @@ static func open(
 	frequency_selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	frequency_row.add_child(frequency_selector)
 
+	var days_row: HBoxContainer = HBoxContainer.new()
+	days_row.add_theme_constant_override("separation", 6)
+	automation_box.add_child(days_row)
+
+	var days_label: Label = Label.new()
+	days_label.text = "Jours de diffusion :"
+	days_label.custom_minimum_size = Vector2(170, 0)
+	days_row.add_child(days_label)
+
+	var day_checks: Array[CheckButton] = []
+	for index: int in range(DAY_NAMES.size()):
+		var day_check: CheckButton = CheckButton.new()
+		day_check.text = DAY_NAMES[index].substr(0, 3)
+		day_check.button_pressed = index == day_index
+		day_check.tooltip_text = DAY_NAMES[index]
+		days_row.add_child(day_check)
+		day_checks.append(day_check)
+
+	var presets_row: HBoxContainer = HBoxContainer.new()
+	presets_row.add_theme_constant_override("separation", 6)
+	automation_box.add_child(presets_row)
+
+	var presets_spacer: Control = Control.new()
+	presets_spacer.custom_minimum_size = Vector2(170, 0)
+	presets_row.add_child(presets_spacer)
+
+	var weekdays_button: Button = Button.new()
+	weekdays_button.text = "Lun–Ven"
+	presets_row.add_child(weekdays_button)
+	weekdays_button.pressed.connect(func() -> void:
+		_set_selected_days(day_checks, [0, 1, 2, 3, 4])
+	)
+
+	var everyday_button: Button = Button.new()
+	everyday_button.text = "Tous les jours"
+	presets_row.add_child(everyday_button)
+	everyday_button.pressed.connect(func() -> void:
+		_set_selected_days(day_checks, [0, 1, 2, 3, 4, 5, 6])
+	)
+
+	var weekend_button: Button = Button.new()
+	weekend_button.text = "Week-end"
+	presets_row.add_child(weekend_button)
+	weekend_button.pressed.connect(func() -> void:
+		_set_selected_days(day_checks, [5, 6])
+	)
+
 	var episodes_per_row: HBoxContainer = HBoxContainer.new()
 	episodes_per_row.add_theme_constant_override("separation", 8)
 	automation_box.add_child(episodes_per_row)
@@ -142,12 +189,20 @@ static func open(
 	period_row.add_child(period_spinner)
 
 	var automation_hint: Label = Label.new()
-	automation_hint.text = "Hebdomadaire : choisissez le nombre d'épisodes diffusés à la suite chaque soirée et le nombre de semaines."
+	automation_hint.text = "Hebdomadaire : choisissez les jours, le nombre d'épisodes à la suite chaque soirée et le nombre de semaines."
 	automation_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	automation_box.add_child(automation_hint)
 
 	frequency_selector.item_selected.connect(func(_index: int) -> void:
 		var frequency_id: int = frequency_selector.get_selected_id()
+		var weekly_mode: bool = frequency_id == FREQUENCY_WEEKLY
+		days_label.visible = weekly_mode
+		for day_check: CheckButton in day_checks:
+			day_check.visible = weekly_mode
+		weekdays_button.visible = weekly_mode
+		everyday_button.visible = weekly_mode
+		weekend_button.visible = weekly_mode
+		presets_spacer.visible = weekly_mode
 		if frequency_id == FREQUENCY_DAILY:
 			episodes_per_label.text = "Épisodes par jour :"
 			period_label.text = "Nombre de jours :"
@@ -158,7 +213,7 @@ static func open(
 			episodes_per_label.text = "Épisodes par soirée :"
 			period_label.text = "Nombre de semaines :"
 			period_spinner.max_value = maxi(53 - week_number, 1)
-			automation_hint.text = "Hebdomadaire : choisissez le nombre d'épisodes diffusés à la suite chaque soirée et le nombre de semaines."
+			automation_hint.text = "Hebdomadaire : choisissez les jours, le nombre d'épisodes à la suite chaque soirée et le nombre de semaines."
 		if period_spinner.value > period_spinner.max_value:
 			period_spinner.value = period_spinner.max_value
 	)
@@ -167,7 +222,7 @@ static func open(
 	content.add_child(separator)
 
 	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, 340)
+	scroll.custom_minimum_size = Vector2(0, 320)
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(scroll)
@@ -249,6 +304,10 @@ static func open(
 			var frequency_id: int = frequency_selector.get_selected_id()
 			var episodes_per_period: int = int(episodes_per_spinner.value)
 			var period_count: int = int(period_spinner.value)
+			var selected_days: Array[int] = _get_selected_days(day_checks)
+			if frequency_id == FREQUENCY_WEEKLY and selected_days.is_empty():
+				_show_selection_error(anchor)
+				return
 			var result: Dictionary = _auto_schedule_episodes(
 				channel,
 				week_number,
@@ -259,6 +318,7 @@ static func open(
 				episodes_per_period,
 				period_count,
 				frequency_id,
+				selected_days,
 				replace_existing
 			)
 			if refresh_callback.is_valid():
@@ -277,7 +337,7 @@ static func open(
 		if is_instance_valid(popup):
 			popup.queue_free()
 	)
-	popup.popup_centered(Vector2i(700, 700))
+	popup.popup_centered(Vector2i(780, 780))
 
 
 static func _auto_schedule_episodes(
@@ -290,10 +350,10 @@ static func _auto_schedule_episodes(
 	episodes_per_period: int,
 	period_count: int,
 	frequency_id: int,
+	selected_days: Array[int],
 	replace_first: bool = false
 ) -> Dictionary:
 	var episode_count: int = ScheduleEpisodeHelperScript.get_episode_count(program)
-	var requested_count: int = maxi(episodes_per_period, 1) * maxi(period_count, 1)
 	var scheduled_count: int = 0
 	var stop_reason: String = ""
 	var frequency_name: String = "daily" if frequency_id == FREQUENCY_DAILY else "weekly"
@@ -310,18 +370,32 @@ static func _auto_schedule_episodes(
 	)
 	var first_write: bool = true
 	var base_absolute_day: int = ((start_week - 1) * 7) + start_day
+	var target_days: Array[int] = []
 
-	for period_index: int in range(maxi(period_count, 1)):
-		var period_absolute_day: int = base_absolute_day
-		if frequency_id == FREQUENCY_DAILY:
-			period_absolute_day += period_index
-		else:
-			period_absolute_day += period_index * 7
+	if frequency_id == FREQUENCY_DAILY:
+		for day_offset: int in range(maxi(period_count, 1)):
+			var absolute_day: int = base_absolute_day + day_offset
+			if absolute_day >= DAYS_PER_YEAR:
+				break
+			target_days.append(absolute_day)
+	else:
+		var ordered_days: Array[int] = selected_days.duplicate()
+		ordered_days.sort()
+		for week_offset: int in range(maxi(period_count, 1)):
+			var target_week_number: int = start_week + week_offset
+			if target_week_number > 52:
+				break
+			for selected_day: int in ordered_days:
+				if week_offset == 0 and selected_day < start_day:
+					continue
+				var absolute_day: int = ((target_week_number - 1) * 7) + selected_day
+				if absolute_day >= DAYS_PER_YEAR:
+					continue
+				target_days.append(absolute_day)
 
-		if period_absolute_day >= DAYS_PER_YEAR:
-			stop_reason = "La fin de l'année 1 a été atteinte."
-			break
+	var requested_count: int = target_days.size() * maxi(episodes_per_period, 1)
 
+	for period_absolute_day: int in target_days:
 		var cursor_absolute_slot: int = (period_absolute_day * SLOTS_PER_DAY) + start_slot
 
 		for _episode_in_period: int in range(maxi(episodes_per_period, 1)):
@@ -393,11 +467,43 @@ static func _auto_schedule_episodes(
 		if not stop_reason.is_empty():
 			break
 
+	if target_days.is_empty() and stop_reason.is_empty():
+		stop_reason = "Aucun jour de diffusion valide n'a été trouvé dans la période choisie."
+
 	return {
 		"scheduled_count": scheduled_count,
 		"requested_count": requested_count,
 		"stop_reason": stop_reason
 	}
+
+
+static func _set_selected_days(day_checks: Array[CheckButton], selected_days: Array[int]) -> void:
+	for index: int in range(day_checks.size()):
+		day_checks[index].button_pressed = selected_days.has(index)
+
+
+static func _get_selected_days(day_checks: Array[CheckButton]) -> Array[int]:
+	var result: Array[int] = []
+	for index: int in range(day_checks.size()):
+		if day_checks[index].button_pressed:
+			result.append(index)
+	return result
+
+
+static func _show_selection_error(anchor: Control) -> void:
+	var dialog: AcceptDialog = AcceptDialog.new()
+	dialog.title = "Jours de diffusion"
+	dialog.dialog_text = "Sélectionnez au moins un jour de diffusion pour l'automatisation hebdomadaire."
+	anchor.add_child(dialog)
+	dialog.confirmed.connect(func() -> void:
+		if is_instance_valid(dialog):
+			dialog.queue_free()
+	)
+	dialog.canceled.connect(func() -> void:
+		if is_instance_valid(dialog):
+			dialog.queue_free()
+	)
+	dialog.popup_centered(Vector2i(520, 190))
 
 
 static func _show_automation_result(anchor: Control, result: Dictionary) -> void:
