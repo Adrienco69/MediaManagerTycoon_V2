@@ -2,18 +2,24 @@ class_name ProductionManager
 extends RefCounted
 
 const LaunchProgramCatalogScript = preload("res://scripts/core/launch_program_catalog.gd")
+const LaunchSeriesTelefilmDistributionScript = preload("res://scripts/core/launch_series_telefilm_distribution.gd")
 
 var _programs: Array[Dictionary] = []
+var _launch_series_telefilm_distribution: Dictionary = {}
 
 
 func reset() -> void:
 	_programs.clear()
+	_launch_series_telefilm_distribution.clear()
 
 
 func assign_launch_programs(channel_name: String) -> void:
 	if not _programs.is_empty():
 		return
-	_programs = LaunchProgramCatalogScript.build(channel_name)
+
+	_launch_series_telefilm_distribution = LaunchSeriesTelefilmDistributionScript.draw()
+	var player_series_telefilm: Dictionary = _launch_series_telefilm_distribution.get("player", {})
+	_programs = LaunchProgramCatalogScript.build(channel_name, player_series_telefilm)
 
 
 func get_programs() -> Array[Dictionary]:
@@ -29,6 +35,10 @@ func get_active_productions() -> Array[Dictionary]:
 		if String(program.get("status", "")) == "Production en cours":
 			result.append(program.duplicate(true))
 	return result
+
+
+func get_launch_series_telefilm_distribution() -> Dictionary:
+	return _launch_series_telefilm_distribution.duplicate(true)
 
 
 func get_program(program_id: String) -> Dictionary:
