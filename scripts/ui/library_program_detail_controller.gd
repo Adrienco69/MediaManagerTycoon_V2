@@ -158,7 +158,20 @@ static func _can_manage_seasons(program: Dictionary) -> bool:
 	var format_name: String = String(program.get("format", ""))
 	if format_name == "Film" or format_name == "Téléfilm":
 		return false
-	return bool(program.get("owned_by_group", false)) and int(program.get("units_total", program.get("episodes_total", 0))) > 1
+	if int(program.get("units_total", program.get("episodes_total", 0))) <= 1:
+		return false
+	if bool(program.get("owned_by_group", false)):
+		return true
+
+	var program_id: String = String(program.get("id", ""))
+	if program_id.is_empty():
+		return false
+	for group_program_value: Variant in GameState.get_group_programs():
+		if group_program_value is Dictionary:
+			var group_program: Dictionary = group_program_value
+			if String(group_program.get("id", "")) == program_id:
+				return true
+	return false
 
 
 static func _add_season_info_row(table: GridContainer, value_text: String, on_manage_seasons: Callable) -> void:
@@ -208,7 +221,7 @@ static func _get_season_text(program: Dictionary) -> String:
 				return "1 saison"
 			return "%d saisons" % season_data.size()
 
-	return "Aucun découpage en saison"
+	return "Aucune saison éditoriale créée"
 
 
 static func _add_info_row(table: GridContainer, label_text: String, value_text: String) -> void:
