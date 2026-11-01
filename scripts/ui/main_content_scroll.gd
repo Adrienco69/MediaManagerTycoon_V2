@@ -19,7 +19,7 @@ static func setup(content_margin: MarginContainer, content_vbox: VBoxContainer) 
 	scroll.add_child(content_vbox)
 
 	content_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_vbox.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	content_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	return scroll
 
 
