@@ -59,6 +59,8 @@ var _main_menu_button: Button
 var _save_status_label: Label
 var _continue_game_button: Button
 var _quit_game_button: Button
+var _delete_save_button: Button
+var _delete_save_dialog: ConfirmationDialog
 
 
 func _ready() -> void:
@@ -87,6 +89,7 @@ func _ready() -> void:
 	_save_status_label = header_actions.get("status_label") as Label
 	_continue_game_button = StartMenuControllerScript.ensure_continue_button(home_panel, _continue_game)
 	_quit_game_button = StartMenuControllerScript.ensure_quit_button(home_panel, _quit_game)
+	_setup_delete_save_controls()
 
 	_connect_game_signals()
 	_connect_buttons()
@@ -108,6 +111,29 @@ func _setup_start_screen_gradient() -> void:
 	start_screen.add_child(gradient_layer)
 	gradient_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	start_screen.move_child(gradient_layer, 0)
+
+
+func _setup_delete_save_controls() -> void:
+	var vbox: VBoxContainer = home_panel.get_node("Margin/VBox") as VBoxContainer
+	_delete_save_button = vbox.get_node_or_null("DeleteSaveButton") as Button
+	if _delete_save_button == null:
+		_delete_save_button = Button.new()
+		_delete_save_button.name = "DeleteSaveButton"
+		_delete_save_button.text = "Supprimer la sauvegarde"
+		_delete_save_button.custom_minimum_size = Vector2(0, 52)
+		_delete_save_button.pressed.connect(_request_delete_save)
+		vbox.add_child(_delete_save_button)
+		if _quit_game_button != null:
+			vbox.move_child(_delete_save_button, _quit_game_button.get_index())
+
+	_delete_save_dialog = ConfirmationDialog.new()
+	_delete_save_dialog.name = "DeleteSaveDialog"
+	_delete_save_dialog.title = "Supprimer la sauvegarde"
+	_delete_save_dialog.dialog_text = "Supprimer définitivement cette sauvegarde ? Cette action est irréversible."
+	_delete_save_dialog.ok_button_text = "Supprimer"
+	_delete_save_dialog.cancel_button_text = "Annuler"
+	_delete_save_dialog.confirmed.connect(_confirm_delete_save)
+	start_screen.add_child(_delete_save_dialog)
 
 
 func _connect_game_signals() -> void:
@@ -142,13 +168,17 @@ func _show_start_screen() -> void:
 	GameState.set_time_mode(GameState.TimeMode.PAUSED)
 	start_screen.visible = true
 	game_ui.visible = false
+	var has_save: bool = SaveGameManagerScript.has_save()
 	StartMenuControllerScript.show_home(
 		home_panel,
 		new_game_panel,
 		load_game_button,
 		start_error_label,
-		SaveGameManagerScript.has_save()
+		has_save
 	)
+	if _delete_save_button != null:
+		_delete_save_button.visible = has_save
+		_delete_save_button.disabled = not has_save
 	if _continue_game_button != null:
 		_continue_game_button.visible = GameState.has_started_game()
 	if _save_status_label != null:
@@ -229,6 +259,20 @@ func _save_game() -> void:
 	var saved: bool = SaveGameManagerScript.save_game(GameState.get_save_data())
 	if _save_status_label != null:
 		_save_status_label.text = "Sauvegardé" if saved else "Erreur sauvegarde"
+
+
+func _request_delete_save() -> void:
+	if not SaveGameManagerScript.has_save() or _delete_save_dialog == null:
+		return
+	_delete_save_dialog.popup_centered()
+
+
+func _confirm_delete_save() -> void:
+	var deleted: bool = SaveGameManagerScript.delete_save()
+	if not deleted:
+		start_error_label.text = "Impossible de supprimer la sauvegarde."
+		return
+	_show_start_screen()
 
 
 func _return_to_main_menu() -> void:
