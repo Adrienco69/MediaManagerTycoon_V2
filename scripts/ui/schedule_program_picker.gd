@@ -1,6 +1,8 @@
 class_name ScheduleProgramPicker
 extends RefCounted
 
+const UIThemeManagerScript = preload("res://scripts/ui/ui_theme_manager.gd")
+
 const ScheduleWeekUsageScript = preload("res://scripts/ui/schedule_week_usage.gd")
 const ScheduleEpisodeHelperScript = preload("res://scripts/ui/schedule_episode_helper.gd")
 const ScheduleEpisodePickerScript = preload("res://scripts/ui/schedule_episode_picker.gd")
@@ -35,6 +37,7 @@ static func open(
 	var popup: PopupPanel = PopupPanel.new()
 	popup.name = "ScheduleProgramPicker"
 	anchor.add_child(popup)
+	UIThemeManagerScript.apply_popup_theme(popup, anchor)
 
 	var margin: MarginContainer = MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 16)
