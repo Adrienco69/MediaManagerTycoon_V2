@@ -28,6 +28,7 @@ func register_initial_channels(
 
 	_history.append({
 		"mmtn_number": 1,
+		"arrival_order": 1,
 		"name": "MG1",
 		"group": "Media Groupe",
 		"theme": "Généraliste",
@@ -40,6 +41,7 @@ func register_initial_channels(
 	})
 
 	var player_entry: Dictionary = player_channel.duplicate(true)
+	player_entry["arrival_order"] = _history.size() + 1
 	player_entry["group"] = player_company
 	player_entry["launch_date"] = String(player_entry.get("launch_date", INITIAL_LAUNCH_DATE))
 	player_entry["closed_date"] = String(player_entry.get("closed_date", ""))
@@ -52,6 +54,8 @@ func register_channel(channel: Dictionary) -> void:
 		return
 
 	var entry: Dictionary = channel.duplicate(true)
+	# Une nouvelle chaîne se place après toutes celles déjà arrivées.
+	entry["arrival_order"] = _history.size() + 1
 	entry["closed_date"] = String(entry.get("closed_date", ""))
 	entry["is_open"] = bool(entry.get("is_open", true))
 	_history.append(entry)
@@ -61,7 +65,12 @@ func load_history(history: Array) -> void:
 	_history.clear()
 	for value: Variant in history:
 		if value is Dictionary:
-			_history.append((value as Dictionary).duplicate(true))
+			var restored: Dictionary = (value as Dictionary).duplicate(true)
+			# Compatibilité des sauvegardes antérieures : l’ordre des entrées
+			# enregistrées constitue leur ordre d’arrivée historique.
+			if not restored.has("arrival_order"):
+				restored["arrival_order"] = _history.size() + 1
+			_history.append(restored)
 
 
 func close_channel(mmtn_number: int, closed_date: String) -> bool:
