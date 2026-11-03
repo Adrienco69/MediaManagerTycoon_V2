@@ -89,8 +89,13 @@ static func configure_program_confirmation(
 	program_name: String,
 	note: String
 ) -> void:
+	var dialog_label: Label = dialog.get_label()
+	var dialog_body: VBoxContainer = dialog_label.get_parent() as VBoxContainer
+	if dialog_body == null:
+		push_warning("Impossible de trouver le conteneur du dialogue.")
+		return
 	dialog.dialog_text = ""
-	dialog.get_label().hide()
+	dialog_label.hide()
 
 	var palette: Dictionary = CalendarThemeScript.get_palette(
 		GameState.month_index,
@@ -104,8 +109,8 @@ static func configure_program_confirmation(
 	var content: VBoxContainer = VBoxContainer.new()
 	content.custom_minimum_size = Vector2(480, 0)
 	content.add_theme_constant_override("separation", 12)
-	dialog.get_vbox().add_child(content)
-	dialog.get_vbox().move_child(content, 0)
+	dialog_body.add_child(content)
+	dialog_body.move_child(content, dialog_label.get_index() + 1)
 
 	var question: Label = Label.new()
 	question.text = prompt
