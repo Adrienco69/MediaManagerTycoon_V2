@@ -61,7 +61,50 @@ static func _build_theme(
 	_apply_popup_menu_theme(result, surface, surface_alt, accent, accent_soft)
 	_apply_item_list_theme(result, surface, surface_alt, accent, accent_soft)
 	_apply_scrollbar_theme(result, surface, surface_alt, accent, accent_soft)
+	_apply_window_theme(result, surface, surface_alt, accent, accent_soft)
 	return result
+
+
+# Applique le thème courant même aux fenêtres qui créent leur propre viewport.
+static func apply_popup_theme(popup: Window, source: Node) -> void:
+	var cursor: Node = source
+	while cursor != null:
+		if cursor is Control:
+			var local_theme: Theme = (cursor as Control).theme
+			if local_theme != null:
+				popup.theme = local_theme
+				return
+		elif cursor is Window:
+			var window_theme: Theme = (cursor as Window).theme
+			if window_theme != null:
+				popup.theme = window_theme
+				return
+		cursor = cursor.get_parent()
+
+
+static func _apply_window_theme(
+	theme: Theme,
+	surface: Color,
+	surface_alt: Color,
+	accent: Color,
+	accent_soft: Color
+) -> void:
+	var dialog_panel: StyleBoxFlat = _make_box(surface, accent, 10, 2)
+	dialog_panel.content_margin_left = 18
+	dialog_panel.content_margin_right = 18
+	dialog_panel.content_margin_top = 16
+	dialog_panel.content_margin_bottom = 16
+	theme.set_stylebox("panel", "AcceptDialog", dialog_panel)
+	theme.set_stylebox("panel", "ConfirmationDialog", dialog_panel)
+	theme.set_stylebox("panel", "PopupPanel", _make_box(surface, accent, 10, 2))
+	theme.set_constant("buttons_min_height", "AcceptDialog", 40)
+	theme.set_constant("buttons_min_width", "AcceptDialog", 110)
+	theme.set_constant("buttons_separation", "AcceptDialog", 14)
+	theme.set_color("title_color", "Window", TEXT_WHITE)
+	theme.set_stylebox("embedded_border", "Window", _make_box(surface, accent, 10, 2))
+	theme.set_stylebox("embedded_unfocused_border", "Window", _make_box(surface, accent.darkened(0.25), 10, 1))
+	theme.set_stylebox("panel", "Window", _make_box(surface_alt, accent, 10, 2))
+	theme.set_constant("title_height", "Window", 36)
 
 
 static func _apply_option_button_theme(
