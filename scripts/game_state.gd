@@ -491,7 +491,22 @@ func register_mmtn_channel(channel: Dictionary) -> void:
 
 
 func close_mmtn_channel(mmtn_number: int, closed_date: String) -> bool:
-	return _mmtn_registry.close_channel(mmtn_number, closed_date)
+	var snapshot: Array[Dictionary] = []
+	for channel: Dictionary in _mmtn_registry.get_channels():
+		if int(channel.get("mmtn_number", -1)) != mmtn_number:
+			continue
+		var existing: Variant = channel.get("programs", [])
+		if existing is Array:
+			for value: Variant in existing:
+				if value is Dictionary:
+					snapshot.append((value as Dictionary).duplicate(true))
+		if snapshot.is_empty():
+			for owned: Dictionary in _player_channel_manager.get_channels():
+				if int(owned.get("mmtn_number", -1)) == mmtn_number:
+					snapshot = _production_manager.get_programs()
+					break
+		break
+	return _mmtn_registry.close_channel(mmtn_number, closed_date, snapshot)
 
 
 func set_time_mode(new_mode: TimeMode) -> void:
