@@ -59,8 +59,19 @@ static func place_speed_controls_under_date(
 			button.reparent(button_row)
 		button.custom_minimum_size = Vector2(64, 34)
 
+	var on_air_label: Label = date_container.get_node_or_null("OnAirLabel") as Label
+	if on_air_label == null:
+		on_air_label = Label.new()
+		on_air_label.name = "OnAirLabel"
+		on_air_label.text = "Actuellement : Aucun programme"
+		on_air_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		on_air_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		on_air_label.add_theme_color_override("font_color", Color.WHITE)
+		date_container.add_child(on_air_label)
+
 	date_container.move_child(info_row, 0)
 	date_container.move_child(button_row, 1)
+	date_container.move_child(on_air_label, 2)
 	date_container.add_theme_constant_override("separation", 6)
 	date_container.custom_minimum_size = Vector2(400, 0)
 
