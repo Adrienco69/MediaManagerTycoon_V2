@@ -55,6 +55,7 @@ const DailyBroadcastReportScript = preload("res://scripts/ui/daily_broadcast_rep
 
 var _last_theme_day_key: int = -1
 var _main_content_scroll: ScrollContainer
+var _on_air_label: Label
 var _daily_report_button: Button
 var _save_button: Button
 var _main_menu_button: Button
@@ -80,6 +81,7 @@ func _ready() -> void:
 		day_button,
 		week_button
 	)
+	_on_air_label = date_container.get_node_or_null("OnAirLabel") as Label
 
 	var header_actions: Dictionary = GameHeaderActionsScript.build(
 		game_title,
@@ -166,6 +168,8 @@ func _connect_game_signals() -> void:
 	GameState.speed_changed.connect(_refresh_speed)
 	GameState.identity_changed.connect(_on_identity_changed)
 	GameState.productions_changed.connect(_on_productions_changed)
+	GameState.schedule_changed.connect(_refresh_on_air)
+	GameState.channel_created.connect(_on_channel_created_refresh_air)
 
 
 func _connect_buttons() -> void:
@@ -339,16 +343,28 @@ func _on_week_pressed() -> void:
 	GameState.set_time_mode(GameState.TimeMode.WEEK)
 
 
+func _on_channel_created_refresh_air(_channel: Dictionary) -> void:
+	_refresh_on_air()
+
+
+func _refresh_on_air() -> void:
+	if _on_air_label == null:
+		return
+	_on_air_label.text = GameState.get_current_player_broadcast_text()
+
+
 func _refresh_all() -> void:
 	_refresh_time()
 	_refresh_credits(GameState.credits)
 	_refresh_speed(GameState.time_mode)
+	_refresh_on_air()
 
 
 func _refresh_time() -> void:
 	date_label.text = GameState.get_date_text()
 	week_label.text = GameState.get_week_text()
 	time_label.text = GameState.get_time_text()
+	_refresh_on_air()
 	_refresh_calendar_theme()
 
 
