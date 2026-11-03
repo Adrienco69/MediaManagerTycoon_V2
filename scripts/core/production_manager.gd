@@ -241,7 +241,9 @@ func record_broadcast(
 	date_text: String,
 	time_text: String,
 	channel_name: String,
-	broadcast_type: String
+	broadcast_type: String,
+	audience_viewers: int = 0,
+	revenue_cc: int = 0
 ) -> bool:
 	for index: int in range(_programs.size()):
 		var program: Dictionary = _programs[index]
@@ -262,7 +264,9 @@ func record_broadcast(
 			"date": date_text,
 			"time": time_text,
 			"channel": channel_name,
-			"type": broadcast_type
+			"type": broadcast_type,
+			"audience_viewers": audience_viewers,
+			"revenue_cc": revenue_cc
 		})
 		program["broadcast_history"] = history
 		_programs[index] = program
