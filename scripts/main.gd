@@ -56,6 +56,11 @@ const DailyBroadcastReportScript = preload("res://scripts/ui/daily_broadcast_rep
 var _last_theme_day_key: int = -1
 var _main_content_scroll: ScrollContainer
 var _on_air_label: Label
+var _income_toast: Label
+var _income_toast_tween: Tween
+var _pending_income_cc: int = 0
+var _pending_income_count: int = 0
+var _income_toast_queued: bool = false
 var _daily_report_button: Button
 var _save_button: Button
 var _main_menu_button: Button
@@ -82,6 +87,7 @@ func _ready() -> void:
 		week_button
 	)
 	_on_air_label = date_container.get_node_or_null("OnAirLabel") as Label
+	_setup_income_toast()
 
 	var header_actions: Dictionary = GameHeaderActionsScript.build(
 		game_title,
@@ -100,6 +106,64 @@ func _ready() -> void:
 	_connect_buttons()
 	_refresh_all()
 	_show_start_screen()
+
+
+# Notification flottante : ne change pas la disposition CC | Date | Heure.
+func _setup_income_toast() -> void:
+	_income_toast = Label.new()
+	_income_toast.name = "IncomeToast"
+	_income_toast.top_level = true
+	_income_toast.visible = false
+	_income_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_income_toast.add_theme_font_size_override("font_size", 16)
+	_income_toast.add_theme_color_override("font_color", Color("#9be9a2"))
+	game_ui.add_child(_income_toast)
+
+
+func _on_broadcast_completed_income(event: Dictionary) -> void:
+	if not game_ui.visible:
+		return
+	var gain: int = int(event.get("revenue_cc", 0))
+	if gain <= 0:
+		return
+	_pending_income_cc += gain
+	_pending_income_count += 1
+	if _income_toast_queued:
+		return
+	_income_toast_queued = true
+	call_deferred("_flush_income_toast")
+
+
+func _flush_income_toast() -> void:
+	_income_toast_queued = false
+	var gain: int = _pending_income_cc
+	var count: int = _pending_income_count
+	_pending_income_cc = 0
+	_pending_income_count = 0
+	if gain <= 0 or _income_toast == null or not game_ui.visible:
+		return
+	if _income_toast_tween != null and _income_toast_tween.is_running():
+		_income_toast_tween.kill()
+	_income_toast.text = "+%d CC" % gain
+	if count > 1:
+		_income_toast.text += " (%d diffusions)" % count
+	_income_toast.modulate.a = 1.0
+	_income_toast.global_position = credits_label.global_position + Vector2(0, credits_label.size.y + 5)
+	_income_toast.visible = true
+	var initial_position: Vector2 = _income_toast.global_position
+	_income_toast_tween = create_tween()
+	_income_toast_tween.set_parallel(true)
+	_income_toast_tween.tween_property(
+		_income_toast, "global_position", initial_position + Vector2(0, -18), 1.8
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_income_toast_tween.tween_property(
+		_income_toast, "modulate:a", 0.0, 1.8
+	).set_delay(0.5)
+	_income_toast_tween.set_parallel(false)
+	_income_toast_tween.tween_callback(func() -> void:
+		if is_instance_valid(_income_toast):
+			_income_toast.visible = false
+	)
 
 
 func _setup_daily_report_button() -> void:
@@ -170,6 +234,7 @@ func _connect_game_signals() -> void:
 	GameState.productions_changed.connect(_on_productions_changed)
 	GameState.schedule_changed.connect(_refresh_on_air)
 	GameState.channel_created.connect(_on_channel_created_refresh_air)
+	GameState.broadcast_completed.connect(_on_broadcast_completed_income)
 
 
 func _connect_buttons() -> void:
