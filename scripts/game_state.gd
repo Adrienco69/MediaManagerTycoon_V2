@@ -224,6 +224,45 @@ func get_player_day_schedule(
 	return _player_schedule_manager.get_day_slots(channel_number, week_number, day_index)
 
 
+# Programme actuellement à l'antenne sur la première chaîne du joueur.
+# Une case de continuation conserve les données du programme initial.
+func get_current_player_broadcast() -> Dictionary:
+	var channel: Dictionary = get_first_channel()
+	if channel.is_empty():
+		return {}
+	var slots: Array[Dictionary] = get_player_day_schedule(
+		channel, week_in_year, day_in_week - 1
+	)
+	var slot: int = hour * 2 + int(minute / 30)
+	if slot < 0 or slot >= slots.size():
+		return {}
+	var entry: Dictionary = slots[slot]
+	if entry.is_empty():
+		return {}
+	return entry
+
+
+func get_current_player_broadcast_text() -> String:
+	var entry: Dictionary = get_current_player_broadcast()
+	if entry.is_empty():
+		return "Actuellement : Aucun programme"
+	var program_name: String = String(entry.get("program_name", "")).strip_edges()
+	if program_name.is_empty():
+		return "Actuellement : Aucun programme"
+	var episode_number: int = int(entry.get("episode_number", 0))
+	var global_episode: int = int(entry.get("episode_global", 0))
+	var season_number: int = int(entry.get("season_number", 0))
+	if global_episode > 0:
+		if season_number > 0 and episode_number > 0:
+			return "Actuellement : %s | S%dE%02d" % [
+				program_name, season_number, episode_number
+			]
+		return "Actuellement : %s | Épisode %d" % [
+			program_name, global_episode
+		]
+	return "Actuellement : %s" % program_name
+
+
 func can_schedule_program(
 	channel: Dictionary,
 	week_number: int,
