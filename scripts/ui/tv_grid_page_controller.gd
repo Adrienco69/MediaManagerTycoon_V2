@@ -103,6 +103,21 @@ static func render(
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 12)
 	dynamic.add_child(body)
+	if editable:
+		# Le catalogue et les horaires restent dans la zone visible.
+		# Leurs barres de défilement sont indépendantes.
+		var main_scroll: ScrollContainer = content_container.get_parent() as ScrollContainer
+		if main_scroll != null:
+			var fit_to_viewport: Callable = func() -> void:
+				if not is_instance_valid(body) or not is_instance_valid(main_scroll):
+					return
+				var available: float = (
+					main_scroll.get_global_rect().end.y
+					- body.get_global_rect().position.y - 12.0
+				)
+				body.custom_minimum_size = Vector2(0, maxf(220.0, available))
+			main_scroll.resized.connect(fit_to_viewport)
+			fit_to_viewport.call_deferred()
 
 	var catalog_holder: VBoxContainer = VBoxContainer.new()
 	catalog_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -124,6 +139,12 @@ static func render(
 	scheduler_holder.add_child(schedule_holder)
 
 	var rebuild_catalog: Callable = func() -> void:
+		var saved_scroll: int = 0
+		var current_scroll: ScrollContainer = catalog_holder.find_child(
+			"ProgramListScroll", true, false
+		) as ScrollContainer
+		if current_scroll != null:
+			saved_scroll = current_scroll.scroll_vertical
 		_clear_holder(catalog_holder)
 		ProgramCatalogPanelScript.build(
 			catalog_holder,
@@ -133,6 +154,11 @@ static func render(
 			channel,
 			int(view_state.get("week_number", 1))
 		)
+		var next_scroll: ScrollContainer = catalog_holder.find_child(
+			"ProgramListScroll", true, false
+		) as ScrollContainer
+		if next_scroll != null:
+			next_scroll.set_deferred("scroll_vertical", saved_scroll)
 
 	var rebuild_schedule: Callable = func(week_number: int) -> void:
 		view_state["week_number"] = week_number
