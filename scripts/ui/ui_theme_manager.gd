@@ -59,6 +59,8 @@ static func _build_theme(
 
 	_apply_option_button_theme(result, surface, surface_alt, accent, accent_soft)
 	_apply_popup_menu_theme(result, surface, surface_alt, accent, accent_soft)
+	_apply_item_list_theme(result, surface, surface_alt, accent, accent_soft)
+	_apply_scrollbar_theme(result, surface, surface_alt, accent, accent_soft)
 	return result
 
 
@@ -105,6 +107,46 @@ static func _apply_popup_menu_theme(
 	theme.set_constant("item_start_padding", "PopupMenu", 10)
 	theme.set_constant("item_end_padding", "PopupMenu", 10)
 	theme.set_constant("outline_size", "PopupMenu", 0)
+
+
+static func _apply_item_list_theme(
+	theme: Theme,
+	surface: Color,
+	surface_alt: Color,
+	accent: Color,
+	accent_soft: Color
+) -> void:
+	theme.set_color("font_color", "ItemList", TEXT_WHITE)
+	theme.set_color("font_hovered_color", "ItemList", TEXT_WHITE)
+	theme.set_color("font_selected_color", "ItemList", TEXT_WHITE)
+	theme.set_color("guide_color", "ItemList", accent.darkened(0.30))
+
+	# Évite totalement le rendu gris/noir natif de Godot.
+	theme.set_stylebox("panel", "ItemList", _make_box(surface, accent.darkened(0.35), 8, 1))
+	theme.set_stylebox("focus", "ItemList", _make_outline_box(accent_soft, 8, 2))
+	theme.set_stylebox("selected", "ItemList", _make_box(accent.darkened(0.35), accent, 6, 1))
+	theme.set_stylebox("selected_focus", "ItemList", _make_box(accent.darkened(0.30), accent_soft, 6, 2))
+	theme.set_stylebox("cursor", "ItemList", _make_outline_box(accent, 6, 1))
+	theme.set_stylebox("cursor_unfocused", "ItemList", _make_outline_box(accent.darkened(0.25), 6, 1))
+
+	theme.set_constant("h_separation", "ItemList", 6)
+	theme.set_constant("v_separation", "ItemList", 4)
+	theme.set_constant("icon_margin", "ItemList", 8)
+	theme.set_constant("line_separation", "ItemList", 4)
+
+
+static func _apply_scrollbar_theme(
+	theme: Theme,
+	surface: Color,
+	surface_alt: Color,
+	accent: Color,
+	accent_soft: Color
+) -> void:
+	for type_name: String in ["VScrollBar", "HScrollBar"]:
+		theme.set_stylebox("scroll", type_name, _make_box(surface.darkened(0.08), surface, 8, 0))
+		theme.set_stylebox("grabber", type_name, _make_box(surface_alt, accent.darkened(0.20), 8, 1))
+		theme.set_stylebox("grabber_highlight", type_name, _make_box(surface_alt.lightened(0.10), accent, 8, 1))
+		theme.set_stylebox("grabber_pressed", type_name, _make_box(accent.darkened(0.25), accent_soft, 8, 1))
 
 
 static func _make_box(background_color: Color, border_color: Color, radius: int, border_width: int) -> StyleBoxFlat:
