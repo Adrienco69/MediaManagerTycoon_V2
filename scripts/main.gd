@@ -656,7 +656,7 @@ func _show_grid_program(program: Dictionary) -> void:
 	)
 
 
-func _show_zap() -> void:
+func _show_zap(show_closed_initial: bool = false) -> void:
 	_clear_dynamic_pages()
 	_scroll_main_to_top()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
@@ -670,7 +670,8 @@ func _show_zap() -> void:
 		page_description,
 		GameState.get_zap_channels(),
 		_show_zap_channel_schedule,
-		_show_zap_channel_archive
+		_show_zap_channel_archive,
+		show_closed_initial
 	)
 
 
@@ -681,7 +682,7 @@ func _show_zap_channel_archive(channel: Dictionary) -> void:
 	page_title.text = "Zap'Chaine | Archives"
 	_title_channel_selector.visible = false
 	ZapChannelArchiveScript.render(
-		content_container, page_description, channel, _show_zap
+		content_container, page_description, channel, _show_zap.bind(true)
 	)
 
 
