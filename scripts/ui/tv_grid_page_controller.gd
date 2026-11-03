@@ -92,16 +92,9 @@ static func render(
 		time_range_holder.add_theme_constant_override("separation", 6)
 		time_range_row.add_child(time_range_holder)
 
+	# La poubelle sera sur la même ligne que le jour sélectionné,
+	# pas sur une rangée entière entre « Plage horaire » et les panneaux.
 	var trash_target: Control = null
-	if editable:
-		var trash_row: HBoxContainer = HBoxContainer.new()
-		trash_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		trash_row.alignment = BoxContainer.ALIGNMENT_END
-		dynamic.add_child(trash_row)
-
-		trash_target = ScheduleTrashTargetScript.new()
-		trash_target.size_flags_horizontal = Control.SIZE_SHRINK_END
-		trash_row.add_child(trash_target)
 
 	var body: HBoxContainer = HBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -143,6 +136,19 @@ static func render(
 	schedule_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scheduler_holder.add_child(schedule_holder)
 
+	var schedule_heading: HBoxContainer = null
+	if editable:
+		schedule_heading = HBoxContainer.new()
+		schedule_heading.name = "ScheduleHeading"
+		schedule_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		schedule_heading.add_theme_constant_override("separation", 12)
+		scheduler_holder.add_child(schedule_heading)
+		scheduler_holder.move_child(schedule_heading, 0)
+
+		trash_target = ScheduleTrashTargetScript.new()
+		trash_target.size_flags_horizontal = Control.SIZE_SHRINK_END
+		schedule_heading.add_child(trash_target)
+
 	var rebuild_catalog: Callable = func() -> void:
 		var saved_scroll: int = 0
 		var current_scroll: ScrollContainer = catalog_holder.find_child(
@@ -181,6 +187,18 @@ static func render(
 			String(view_state.get("time_range_id", "")) if editable else "",
 			rebuild_catalog
 		)
+		if editable and schedule_heading != null:
+			# Le constructeur produit le libellé du jour ; le déplacer dans
+			# l'en-tête, à gauche de la poubelle, évite une ligne supplémentaire.
+			var day_heading: Label = schedule_holder.get_child(0) as Label
+			if day_heading != null:
+				for old_heading: Node in schedule_heading.get_children():
+					if old_heading != trash_target:
+						schedule_heading.remove_child(old_heading)
+						old_heading.queue_free()
+				day_heading.reparent(schedule_heading)
+				day_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				schedule_heading.move_child(day_heading, 0)
 
 	if editable and trash_target != null:
 		var refresh_after_delete: Callable = func() -> void:
