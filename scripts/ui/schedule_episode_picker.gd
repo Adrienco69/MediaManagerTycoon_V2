@@ -6,6 +6,7 @@ const ScheduleEpisodeHelperScript = preload("res://scripts/ui/schedule_episode_h
 const SLOT_MINUTES: int = 30
 const SLOTS_PER_DAY: int = 48
 const DAYS_PER_YEAR: int = 364
+const BROADCAST_EPISODE_COLOR: Color = Color(1.0, 0.55, 0.15, 1.0)
 const DAY_NAMES: Array[String] = [
 	"Lundi",
 	"Mardi",
@@ -100,68 +101,108 @@ static func open(
 	content.add_child(manual_container)
 
 	var manual_hint: Label = Label.new()
-	manual_hint.text = "Choisissez l'épisode à diffuser sur ce créneau."
+	manual_hint.text = "Choisissez l'épisode à diffuser sur ce créneau. Les épisodes déjà diffusés apparaissent en orange."
 	manual_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	manual_container.add_child(manual_hint)
 
-	var manual_scroll: ScrollContainer = ScrollContainer.new()
-	manual_scroll.custom_minimum_size = Vector2(0, 430)
-	manual_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	manual_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	manual_container.add_child(manual_scroll)
+	var selected_episode_data: Dictionary = {}
+	var episode_selector_button: Button = Button.new()
+	episode_selector_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	episode_selector_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	episode_selector_button.custom_minimum_size = Vector2(0, 44)
+	manual_container.add_child(episode_selector_button)
 
-	var episode_list: VBoxContainer = VBoxContainer.new()
-	episode_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	episode_list.add_theme_constant_override("separation", 6)
-	manual_scroll.add_child(episode_list)
+	var episode_dropdown: ItemList = ItemList.new()
+	episode_dropdown.visible = false
+	episode_dropdown.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	episode_dropdown.custom_minimum_size = Vector2(0, min(episode_count * 38, 300))
+	episode_dropdown.select_mode = ItemList.SELECT_SINGLE
+	episode_dropdown.allow_reselect = true
+	manual_container.add_child(episode_dropdown)
 
+	var first_available_index: int = -1
 	for global_episode: int in range(1, episode_count + 1):
 		var episode_data: Dictionary = ScheduleEpisodeHelperScript.get_episode_data(program, global_episode)
 		if episode_data.is_empty():
 			continue
 
-		var episode_button: Button = Button.new()
-		episode_button.text = String(episode_data.get("label", "Épisode %d" % global_episode))
-		episode_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		episode_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		episode_button.custom_minimum_size = Vector2(0, 40)
-		episode_list.add_child(episode_button)
+		var compact_label: String = ScheduleEpisodeHelperScript.get_compact_label(program, episode_data)
+		if compact_label.is_empty():
+			compact_label = "Épisode %d" % global_episode
 
-		var captured_episode: Dictionary = episode_data.duplicate(true)
-		episode_button.pressed.connect(func() -> void:
-			var saved: bool = false
-			if editing_existing:
-				saved = GameState.update_scheduled_episode(
-					channel,
-					week_number,
-					day_index,
-					slot_index,
-					captured_episode
-				)
-			elif replace_existing:
-				saved = GameState.replace_scheduled_program(
-					channel,
-					week_number,
-					day_index,
-					slot_index,
-					program,
-					captured_episode
-				)
-			else:
-				saved = GameState.schedule_program(
-					channel,
-					week_number,
-					day_index,
-					slot_index,
-					program,
-					captured_episode
-				)
-			if not saved:
-				return
-			popup.hide()
-			if refresh_callback.is_valid():
-				refresh_callback.call()
-		)
+		var item_index: int = episode_dropdown.add_item(compact_label)
+		episode_dropdown.set_item_metadata(item_index, episode_data.duplicate(true))
+		episode_dropdown.set_item_tooltip(item_index, String(episode_data.get("label", compact_label)))
+		if _episode_was_broadcast(program, episode_data):
+			episode_dropdown.set_item_custom_fg_color(item_index, BROADCAST_EPISODE_COLOR)
+
+		if first_available_index < 0:
+			first_available_index = item_index
+
+	if first_available_index >= 0:
+		episode_dropdown.select(first_available_index)
+		selected_episode_data = episode_dropdown.get_item_metadata(first_available_index)
+		episode_selector_button.text = episode_dropdown.get_item_text(first_available_index)
+	else:
+		episode_selector_button.text = "Aucun épisode disponible"
+		episode_selector_button.disabled = true
+
+	episode_selector_button.pressed.connect(func() -> void:
+		episode_dropdown.visible = not episode_dropdown.visible
+	)
+
+	episode_dropdown.item_selected.connect(func(index: int) -> void:
+		var metadata: Variant = episode_dropdown.get_item_metadata(index)
+		if metadata is Dictionary:
+			selected_episode_data = (metadata as Dictionary).duplicate(true)
+		episode_selector_button.text = episode_dropdown.get_item_text(index)
+		episode_dropdown.visible = false
+	)
+
+	var manual_program_button: Button = Button.new()
+	manual_program_button.text = "Programmer cet épisode"
+	manual_program_button.custom_minimum_size = Vector2(0, 42)
+	manual_program_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	manual_container.add_child(manual_program_button)
+
+	manual_program_button.pressed.connect(func() -> void:
+		if selected_episode_data.is_empty():
+			return
+
+		var saved: bool = false
+		if editing_existing:
+			saved = GameState.update_scheduled_episode(
+				channel,
+				week_number,
+				day_index,
+				slot_index,
+				selected_episode_data
+			)
+		elif replace_existing:
+			saved = GameState.replace_scheduled_program(
+				channel,
+				week_number,
+				day_index,
+				slot_index,
+				program,
+				selected_episode_data
+			)
+		else:
+			saved = GameState.schedule_program(
+				channel,
+				week_number,
+				day_index,
+				slot_index,
+				program,
+				selected_episode_data
+			)
+
+		if not saved:
+			return
+		popup.hide()
+		if refresh_callback.is_valid():
+			refresh_callback.call()
+	)
 
 	var automation_container: VBoxContainer = VBoxContainer.new()
 	automation_container.visible = false
@@ -281,7 +322,7 @@ static func open(
 		if episode_data.is_empty():
 			continue
 		start_episode_selector.add_item(
-			String(episode_data.get("label", "Épisode %d" % global_episode)),
+			ScheduleEpisodeHelperScript.get_compact_label(program, episode_data),
 			global_episode
 		)
 	if start_episode_selector.item_count > 0:
@@ -353,7 +394,39 @@ static func open(
 		if is_instance_valid(popup):
 			popup.queue_free()
 	)
-	popup.popup_centered(Vector2i(800, 760))
+	popup.popup_centered(Vector2i(800, 620))
+
+
+static func _episode_was_broadcast(program: Dictionary, episode_data: Dictionary) -> bool:
+	var global_episode: int = int(episode_data.get("episode_global", 0))
+	var season_number: int = int(episode_data.get("season_number", 0))
+	var episode_number: int = int(episode_data.get("episode_number", global_episode))
+	var history_value: Variant = program.get("broadcast_history", [])
+	if not history_value is Array:
+		return false
+
+	for history_item_value: Variant in history_value:
+		if not history_item_value is Dictionary:
+			continue
+		var history_item: Dictionary = history_item_value as Dictionary
+
+		var history_global: int = int(history_item.get(
+			"episode_global",
+			history_item.get("code_prod", 0)
+		))
+		if global_episode > 0 and history_global == global_episode:
+			return true
+
+		if season_number > 0:
+			var history_season: int = int(history_item.get("season", 0))
+			var history_episode: int = int(history_item.get("episode", 0))
+			if history_season == season_number and history_episode == episode_number:
+				return true
+
+		if season_number <= 0 and int(history_item.get("episode", 0)) == global_episode:
+			return true
+
+	return false
 
 
 static func _auto_schedule_episodes(
