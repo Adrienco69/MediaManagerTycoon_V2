@@ -43,7 +43,10 @@ static func build(
 	parent.add_child(selected_day_label)
 
 	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, 430)
+	scroll.name = "ScheduleSlotsScroll"
+	# Les horaires défilent seuls dans la hauteur disponible de la grille.
+	scroll.custom_minimum_size = Vector2.ZERO
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	parent.add_child(scroll)
