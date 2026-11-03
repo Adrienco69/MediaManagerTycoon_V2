@@ -31,26 +31,40 @@ static func build(
 	box.corner_radius_bottom_right = 8
 	box.content_margin_left = 12.0
 	box.content_margin_right = 12.0
-	box.content_margin_top = 12.0
-	box.content_margin_bottom = 12.0
+	box.content_margin_top = 8.0
+	box.content_margin_bottom = 8.0
 	panel.add_theme_stylebox_override("panel", box)
 
 	var content: VBoxContainer = VBoxContainer.new()
-	content.add_theme_constant_override("separation", 10)
+	content.add_theme_constant_override("separation", 6)
 	panel.add_child(content)
+
+	var title_row: HBoxContainer = HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 8)
+	content.add_child(title_row)
 
 	var title: Label = Label.new()
 	title.text = "Programmes"
 	title.add_theme_font_size_override("font_size", 20)
-	content.add_child(title)
+	title_row.add_child(title)
 
-	var hint: Label = Label.new()
-	if editable:
-		hint.text = "Cliquez sur une case horaire pour choisir un programme, ou glissez un titre sur la grille. Orange = déjà programmé dans cette semaine."
-	else:
-		hint.text = "Catalogue non modifiable. Cliquez sur un titre pour voir sa fiche."
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_child(hint)
+	# Les explications restent accessibles sans prendre la place des programmes.
+	var hint_text: String = (
+		"Cliquez sur une case horaire pour choisir un programme, "
+		+ "ou glissez un titre sur la grille. "
+		+ "Orange = déjà programmé dans cette semaine."
+	) if editable else (
+		"Catalogue non modifiable. Cliquez sur un titre pour voir sa fiche."
+	)
+	title.tooltip_text = hint_text
+	var help_button: Button = Button.new()
+	help_button.text = "ⓘ"
+	help_button.flat = true
+	help_button.focus_mode = Control.FOCUS_NONE
+	help_button.mouse_default_cursor_shape = Control.CURSOR_HELP
+	help_button.tooltip_text = hint_text
+	help_button.custom_minimum_size = Vector2(25, 25)
+	title_row.add_child(help_button)
 
 	var separator: HSeparator = HSeparator.new()
 	content.add_child(separator)
