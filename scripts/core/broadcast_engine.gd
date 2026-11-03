@@ -86,7 +86,7 @@ func process_interval(
 	schedule_manager: PlayerScheduleManager,
 	production_manager: ProductionManager
 ) -> Dictionary:
-	var result: Dictionary = {"revenue": 0, "count": 0}
+	var result: Dictionary = {"revenue": 0, "count": 0, "completed_events": []}
 	if minutes_elapsed <= 0 or channel.is_empty():
 		return result
 	var channel_number: int = int(channel.get("mmtn_number", 0))
@@ -126,11 +126,27 @@ func process_interval(
 					if not event.is_empty():
 						processed_ids[transaction_id] = true
 						history.append(event)
-						var amount: int = int(event.get("revenue_cc", 0))
-						total_revenue += amount
-						result["revenue"] = int(result["revenue"]) + amount
 						result["count"] = int(result["count"]) + 1
 		boundary += SLOT_MINUTES
+
+	# Les recettes sont versées à la FIN de chaque passage.
+	# Les données de diffusion sont enregistrées dès son lancement.
+	var completed: Array[Dictionary] = []
+	for index: int in range(history.size()):
+		var event: Dictionary = history[index]
+		# Les anciennes sauvegardes ont déjà crédité leurs diffusions au départ.
+		if bool(event.get("paid", true)):
+			continue
+		var end_minute: int = int(event.get("end_absolute_minute", 0))
+		if end_minute > end_absolute:
+			continue
+		event["paid"] = true
+		history[index] = event
+		var amount: int = maxi(int(event.get("revenue_cc", 0)), 0)
+		total_revenue += amount
+		result["revenue"] = int(result["revenue"]) + amount
+		completed.append(event.duplicate(true))
+	result["completed_events"] = completed
 	return result
 
 
@@ -194,7 +210,14 @@ func _build_event(
 		"episode_number": episode_number,
 		"type": broadcast_type,
 		"audience_viewers": audience,
-		"revenue_cc": revenue
+		"revenue_cc": revenue,
+		"paid": false,
+		"end_absolute_minute": (
+			(year_number - 1) * MINUTES_PER_YEAR
+			+ day_number * MINUTES_PER_DAY
+			+ slot_number * SLOT_MINUTES
+			+ maxi(int(entry.get("duration_minutes", SLOT_MINUTES)), SLOT_MINUTES)
+		)
 	}
 
 
