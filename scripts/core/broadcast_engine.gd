@@ -16,7 +16,8 @@ const DAY_NAMES: Array[String] = [
 	"Vendredi", "Samedi", "Dimanche"
 ]
 
-# Montants documentés ; les autres valeurs sont provisoires et centralisées ici.
+# TOUS les montants sont provisoires : à équilibrer selon les recettes quotidiennes.
+# Un passage rapporte le tarif du format une seule fois, quelle que soit sa durée.
 # Barème de diffusion validé : même revenu pour inédit et rediffusion.
 const JT_CC: int = 5
 const GAME_CC: int = 10
@@ -109,6 +110,7 @@ func process_interval(
 		)
 		if slot_number < day_slots.size():
 			var entry: Dictionary = day_slots[slot_number]
+			# Ne jamais rémunérer les cases « continuation » (ex. film de 150 min).
 			if String(entry.get("kind", "")) == "start":
 				var broadcast_id: String = String(entry.get("broadcast_id", ""))
 				if broadcast_id.is_empty():
