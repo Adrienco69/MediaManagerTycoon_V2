@@ -54,6 +54,10 @@ const DailyBroadcastReportScript = preload("res://scripts/ui/daily_broadcast_rep
 @onready var start_title: Label = $StartScreen/Center/Panel/Margin/VBox/Title
 
 var _last_theme_day_key: int = -1
+var _title_channel_selector: OptionButton
+var _title_selector_mode: String = ""
+var _selected_grid_channel_number: int = -1
+var _selected_zap_channel_number: int = -1
 var _main_content_scroll: ScrollContainer
 var _on_air_label: Label
 var _income_toast: Label
@@ -74,6 +78,7 @@ var _delete_save_dialog: ConfirmationDialog
 func _ready() -> void:
 	_setup_start_screen_gradient()
 	_main_content_scroll = MainContentScrollScript.setup(content_margin, content_container)
+	_setup_title_channel_selector()
 	TopBarLayoutScript.place_speed_controls_under_date(
 		speed_label,
 		week_label,
@@ -184,6 +189,99 @@ func _setup_daily_report_button() -> void:
 		if GameState.has_started_game() and game_ui.visible:
 			DailyBroadcastReportScript.open(self)
 	)
+
+
+# Même sélecteur intégré au titre pour Grille TV et Zap'Chaine.
+func _setup_title_channel_selector() -> void:
+	var title_parent: VBoxContainer = page_title.get_parent() as VBoxContainer
+	if title_parent == null:
+		return
+	var title_position: int = page_title.get_index()
+	var title_row: HBoxContainer = HBoxContainer.new()
+	title_row.name = "PageTitleWithChannel"
+	title_row.add_theme_constant_override("separation", 12)
+	title_parent.add_child(title_row)
+	title_parent.move_child(title_row, title_position)
+	page_title.reparent(title_row)
+	page_title.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+
+	_title_channel_selector = OptionButton.new()
+	_title_channel_selector.name = "ChannelTitleSelector"
+	_title_channel_selector.custom_minimum_size = Vector2(160, 38)
+	_title_channel_selector.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_title_channel_selector.tooltip_text = "Choisir la chaîne à afficher"
+	_title_channel_selector.visible = false
+	title_row.add_child(_title_channel_selector)
+	_title_channel_selector.item_selected.connect(_on_title_channel_selected)
+
+
+func _show_channel_title(
+	mode: String,
+	channels: Array[Dictionary],
+	selected_number: int
+) -> void:
+	_title_selector_mode = mode
+	if _title_channel_selector == null:
+		return
+	_title_channel_selector.clear()
+	var desired_index: int = -1
+	for channel: Dictionary in channels:
+		var number: int = int(channel.get("mmtn_number", -1))
+		if number < 0:
+			continue
+		var name: String = String(channel.get("name", "Chaîne"))
+		_title_channel_selector.add_item(name, number)
+		if number == selected_number:
+			desired_index = _title_channel_selector.item_count - 1
+	_title_channel_selector.visible = _title_channel_selector.item_count > 0
+	if desired_index < 0 and _title_channel_selector.item_count > 0:
+		desired_index = 0
+	if desired_index >= 0:
+		_title_channel_selector.select(desired_index)
+	if mode == "grid":
+		page_title.text = "Grille TV | Chaîne :"
+	elif mode == "zap":
+		page_title.text = "Zap'Chaine |"
+	_title_channel_selector.tooltip_text = "Choisir une chaîne (même si une seule est disponible)"
+
+
+func _on_title_channel_selected(index: int) -> void:
+	if _title_channel_selector == null:
+		return
+	if index < 0 or index >= _title_channel_selector.item_count:
+		return
+	var number: int = _title_channel_selector.get_item_id(index)
+	if _title_selector_mode == "grid":
+		_selected_grid_channel_number = number
+		_show_grid()
+	elif _title_selector_mode == "zap":
+		_selected_zap_channel_number = number
+		for channel: Dictionary in GameState.get_zap_channels():
+			if int(channel.get("mmtn_number", -1)) == number:
+				_show_zap_channel_schedule(channel)
+				return
+
+
+func _get_selected_grid_channel() -> Dictionary:
+	var channels: Array[Dictionary] = GameState.get_player_channels()
+	for channel: Dictionary in channels:
+		if int(channel.get("mmtn_number", -1)) == _selected_grid_channel_number:
+			return channel
+	if not channels.is_empty():
+		_selected_grid_channel_number = int(channels[0].get("mmtn_number", -1))
+		return channels[0]
+	return {}
+
+
+func _get_active_zap_channels() -> Array[Dictionary]:
+	var active: Array[Dictionary] = []
+	for channel: Dictionary in GameState.get_zap_channels():
+		if not bool(channel.get("is_open", true)):
+			continue
+		if not String(channel.get("closed_date", "")).is_empty():
+			continue
+		active.append(channel)
+	return active
 
 
 func _setup_start_screen_gradient() -> void:
@@ -502,12 +600,16 @@ func _show_grid() -> void:
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), grid_button)
 	page_title.text = "Grille TV"
 
-	var channel: Dictionary = GameState.get_first_channel()
+	var channel: Dictionary = _get_selected_grid_channel()
 	if channel.is_empty():
 		page_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		page_description.text = "Créez d'abord votre première chaîne."
 		return
 
+	_show_channel_title(
+		"grid", GameState.get_player_channels(),
+		int(channel.get("mmtn_number", -1))
+	)
 	TVGridPageControllerScript.render(
 		content_container,
 		page_description,
@@ -543,7 +645,11 @@ func _show_zap() -> void:
 	_clear_dynamic_pages()
 	_scroll_main_to_top()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
-	page_title.text = "Zap'Chaine"
+	var channels: Array[Dictionary] = _get_active_zap_channels()
+	var shown_number: int = _selected_zap_channel_number
+	if shown_number < 0 and not channels.is_empty():
+		shown_number = int(channels[0].get("mmtn_number", -1))
+	_show_channel_title("zap", channels, shown_number)
 	ZapPageControllerScript.render(
 		content_container,
 		page_description,
@@ -556,7 +662,10 @@ func _show_zap_channel_schedule(channel: Dictionary) -> void:
 	_clear_dynamic_pages()
 	_scroll_main_to_top()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
-	page_title.text = "Zap'Chaine | %s" % String(channel.get("name", ""))
+	_selected_zap_channel_number = int(channel.get("mmtn_number", -1))
+	_show_channel_title(
+		"zap", _get_active_zap_channels(), _selected_zap_channel_number
+	)
 
 	var captured_channel: Dictionary = channel.duplicate(true)
 	TVGridPageControllerScript.render(
@@ -663,6 +772,9 @@ func _start_production_from_form(spec: Dictionary) -> String:
 
 
 func _clear_dynamic_pages() -> void:
+	if _title_channel_selector != null:
+		_title_channel_selector.visible = false
+	_title_selector_mode = ""
 	# Restaurer l'espacement et la description des autres pages.
 	content_container.add_theme_constant_override("separation", 16)
 	page_description.visible = true
