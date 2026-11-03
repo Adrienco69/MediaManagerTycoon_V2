@@ -546,7 +546,6 @@ func advance_minutes(amount: int) -> void:
 		_advance_one_day()
 
 	var channel: Dictionary = _player_channel_manager.get_first_channel()
-	var broadcast_count_before: int = _broadcast_engine.history.size()
 	var processed: Dictionary = _broadcast_engine.process_interval(
 		start_year, start_year_minute, amount,
 		channel, _player_schedule_manager, _production_manager
@@ -556,8 +555,11 @@ func advance_minutes(amount: int) -> void:
 		add_credits(revenue)
 	if int(processed.get("count", 0)) > 0:
 		programs_changed.emit()
-		for index: int in range(broadcast_count_before, _broadcast_engine.history.size()):
-			broadcast_completed.emit(_broadcast_engine.history[index].duplicate(true))
+	var completed_value: Variant = processed.get("completed_events", [])
+	if completed_value is Array:
+		for event_value: Variant in completed_value:
+			if event_value is Dictionary:
+				broadcast_completed.emit((event_value as Dictionary).duplicate(true))
 
 	time_changed.emit()
 
