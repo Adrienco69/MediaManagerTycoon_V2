@@ -134,6 +134,7 @@ func _setup_delete_save_controls() -> void:
 	_delete_save_dialog.cancel_button_text = "Annuler"
 	_delete_save_dialog.confirmed.connect(_confirm_delete_save)
 	start_screen.add_child(_delete_save_dialog)
+	UIThemeManagerScript.apply_popup_theme(_delete_save_dialog, self)
 
 
 func _connect_game_signals() -> void:
