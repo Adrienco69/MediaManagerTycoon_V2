@@ -357,6 +357,8 @@ func _refresh_calendar_theme() -> void:
 		GameState.get_day_of_month(),
 		weeks_in_month
 	)
+	if _delete_save_dialog != null:
+		UIThemeManagerScript.apply_popup_theme(_delete_save_dialog, self)
 
 
 func _refresh_credits(new_value: int) -> void:
