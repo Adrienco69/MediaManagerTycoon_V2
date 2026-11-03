@@ -82,7 +82,7 @@ static func open(anchor: Control) -> void:
 		popup.queue_free()
 	)
 
-	_render(current_absolute - 1, date_label, summary, detail)
+	_render(current_absolute - 1 if current_absolute > 0 else current_absolute, date_label, summary, detail)
 	popup.popup_centered(Vector2i(710, 540))
 
 
