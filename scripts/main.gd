@@ -290,6 +290,11 @@ func _get_active_zap_channels() -> Array[Dictionary]:
 		if not String(channel.get("closed_date", "")).is_empty():
 			continue
 		active.append(channel)
+	# « Zapping » est ajouté séparément en tête du menu ; toutes les
+	# chaînes suivent leur ordre d'arrivée, y compris après rechargement.
+	active.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a.get("arrival_order", 0)) < int(b.get("arrival_order", 0))
+	)
 	return active
 
 
