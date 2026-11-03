@@ -496,6 +496,9 @@ func _show_group() -> void:
 func _show_grid() -> void:
 	_clear_dynamic_pages()
 	_scroll_main_to_top()
+	# Dans la grille, seuls les panneaux internes doivent défiler.
+	if _main_content_scroll != null:
+		_main_content_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), grid_button)
 	page_title.text = "Grille TV"
 
@@ -660,6 +663,9 @@ func _start_production_from_form(spec: Dictionary) -> String:
 
 
 func _clear_dynamic_pages() -> void:
+	# Les pages autres que Grille TV gardent leur défilement habituel.
+	if _main_content_scroll != null:
+		_main_content_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	GroupPageControllerScript.clear(content_container)
 	TVGridPageControllerScript.clear(content_container)
 	ZapPageControllerScript.clear(content_container)
