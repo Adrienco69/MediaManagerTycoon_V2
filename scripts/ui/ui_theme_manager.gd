@@ -82,20 +82,22 @@ static func apply_popup_theme(popup: Window, source: Node) -> void:
 		cursor = cursor.get_parent()
 
 
-# Met en valeur le programme cible dans les confirmations de la grille.
-static func configure_program_confirmation(
-	dialog: ConfirmationDialog,
+# Confirmation entièrement construite avec les contrôles du thème MMT.
+# Ne dépend pas des conteneurs internes de ConfirmationDialog.
+static func show_program_confirmation(
+	anchor: Control,
+	dialog_title: String,
 	prompt: String,
 	program_name: String,
-	note: String
+	note: String,
+	confirm_text: String,
+	on_confirm: Callable
 ) -> void:
-	var dialog_label: Label = dialog.get_label()
-	var dialog_body: VBoxContainer = dialog_label.get_parent() as VBoxContainer
-	if dialog_body == null:
-		push_warning("Impossible de trouver le conteneur du dialogue.")
-		return
-	dialog.dialog_text = ""
-	dialog_label.hide()
+	var popup: PopupPanel = PopupPanel.new()
+	popup.title = dialog_title
+	popup.name = "MMTProgramConfirmation"
+	anchor.add_child(popup)
+	apply_popup_theme(popup, anchor)
 
 	var palette: Dictionary = CalendarThemeScript.get_palette(
 		GameState.month_index,
@@ -103,14 +105,25 @@ static func configure_program_confirmation(
 		int(GameState.MONTHS[GameState.month_index].get("weeks", 7))
 	)
 	var surface_alt: Color = palette["surface_alt"]
-	var accent: Color = palette["accent"]
 	var accent_soft: Color = palette["accent_soft"]
 
+	var margin: MarginContainer = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_bottom", 16)
+	popup.add_child(margin)
+
 	var content: VBoxContainer = VBoxContainer.new()
-	content.custom_minimum_size = Vector2(480, 0)
-	content.add_theme_constant_override("separation", 12)
-	dialog_body.add_child(content)
-	dialog_body.move_child(content, dialog_label.get_index() + 1)
+	content.custom_minimum_size = Vector2(490, 0)
+	content.add_theme_constant_override("separation", 14)
+	margin.add_child(content)
+
+	var heading: Label = Label.new()
+	heading.text = dialog_title
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 19)
+	content.add_child(heading)
 
 	var question: Label = Label.new()
 	question.text = prompt
@@ -118,9 +131,7 @@ static func configure_program_confirmation(
 	content.add_child(question)
 
 	var focus_panel: PanelContainer = PanelContainer.new()
-	var focus_style: StyleBoxFlat = _make_box(
-		surface_alt.lightened(0.12), accent_soft, 8, 1
-	)
+	var focus_style: StyleBoxFlat = _make_box(surface_alt.lightened(0.12), accent_soft, 8, 1)
 	focus_style.content_margin_top = 12
 	focus_style.content_margin_bottom = 12
 	focus_panel.add_theme_stylebox_override("panel", focus_style)
@@ -131,7 +142,7 @@ static func configure_program_confirmation(
 	name_label.fit_content = true
 	name_label.scroll_active = false
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	name_label.custom_minimum_size = Vector2(0, 30)
+	name_label.custom_minimum_size = Vector2(440, 30)
 	name_label.add_theme_color_override("default_color", TEXT_WHITE)
 	name_label.text = "[b]%s[/b]" % program_name.replace("[", "［").replace("]", "］")
 	focus_panel.add_child(name_label)
@@ -140,6 +151,32 @@ static func configure_program_confirmation(
 	description.text = note
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(description)
+
+	var actions: HBoxContainer = HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_END
+	actions.add_theme_constant_override("separation", 12)
+	content.add_child(actions)
+
+	var confirm_button: Button = Button.new()
+	confirm_button.text = confirm_text
+	confirm_button.custom_minimum_size = Vector2(130, 42)
+	actions.add_child(confirm_button)
+	confirm_button.pressed.connect(func() -> void:
+		if on_confirm.is_valid():
+			on_confirm.call()
+		popup.hide()
+	)
+
+	var cancel_button: Button = Button.new()
+	cancel_button.text = "Annuler"
+	cancel_button.custom_minimum_size = Vector2(120, 42)
+	actions.add_child(cancel_button)
+	cancel_button.pressed.connect(popup.hide)
+
+	popup.popup_hide.connect(func() -> void:
+		popup.queue_free()
+	)
+	popup.popup_centered(Vector2i(560, 265))
 
 
 static func _apply_window_theme(
