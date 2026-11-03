@@ -204,6 +204,19 @@ func _open_delete_confirmation() -> void:
 	var program_name: String = "cette diffusion"
 	if program_value is Dictionary:
 		program_name = String((program_value as Dictionary).get("name", program_name))
+	var episode_value: Variant = source_data.get("episode_data", {})
+	if episode_value is Dictionary:
+		var episode_data: Dictionary = episode_value as Dictionary
+		var global_episode: int = int(episode_data.get("episode_global", 0))
+		if global_episode > 0:
+			var episode_label: String = "Épisode %d" % global_episode
+			if program_value is Dictionary:
+				var compact_label: String = ScheduleEpisodeHelperScript.get_compact_label(
+					program_value as Dictionary, episode_data
+				)
+				if not compact_label.is_empty():
+					episode_label = compact_label
+			program_name += " | " + episode_label
 	var automation_id: String = String(source_data.get("automation_id", ""))
 	var is_automatic: bool = not automation_id.is_empty()
 
