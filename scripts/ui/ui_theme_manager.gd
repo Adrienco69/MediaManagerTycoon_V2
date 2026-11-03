@@ -82,6 +82,61 @@ static func apply_popup_theme(popup: Window, source: Node) -> void:
 		cursor = cursor.get_parent()
 
 
+# Met en valeur le programme cible dans les confirmations de la grille.
+static func configure_program_confirmation(
+	dialog: ConfirmationDialog,
+	prompt: String,
+	program_name: String,
+	note: String
+) -> void:
+	dialog.dialog_text = ""
+	dialog.get_label().hide()
+
+	var palette: Dictionary = CalendarThemeScript.get_palette(
+		GameState.month_index,
+		GameState.get_day_of_month(),
+		int(GameState.MONTHS[GameState.month_index].get("weeks", 7))
+	)
+	var surface_alt: Color = palette["surface_alt"]
+	var accent: Color = palette["accent"]
+	var accent_soft: Color = palette["accent_soft"]
+
+	var content: VBoxContainer = VBoxContainer.new()
+	content.custom_minimum_size = Vector2(480, 0)
+	content.add_theme_constant_override("separation", 12)
+	dialog.get_vbox().add_child(content)
+	dialog.get_vbox().move_child(content, 0)
+
+	var question: Label = Label.new()
+	question.text = prompt
+	question.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(question)
+
+	var focus_panel: PanelContainer = PanelContainer.new()
+	var focus_style: StyleBoxFlat = _make_box(
+		surface_alt.lightened(0.12), accent_soft, 8, 1
+	)
+	focus_style.content_margin_top = 12
+	focus_style.content_margin_bottom = 12
+	focus_panel.add_theme_stylebox_override("panel", focus_style)
+	content.add_child(focus_panel)
+
+	var name_label: RichTextLabel = RichTextLabel.new()
+	name_label.bbcode_enabled = true
+	name_label.fit_content = true
+	name_label.scroll_active = false
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.custom_minimum_size = Vector2(0, 30)
+	name_label.add_theme_color_override("default_color", TEXT_WHITE)
+	name_label.text = "[b]%s[/b]" % program_name.replace("[", "［").replace("]", "］")
+	focus_panel.add_child(name_label)
+
+	var description: Label = Label.new()
+	description.text = note
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(description)
+
+
 static func _apply_window_theme(
 	theme: Theme,
 	surface: Color,
