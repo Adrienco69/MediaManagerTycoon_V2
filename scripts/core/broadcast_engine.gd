@@ -17,11 +17,20 @@ const DAY_NAMES: Array[String] = [
 ]
 
 # Montants documentés ; les autres valeurs sont provisoires et centralisées ici.
+# Barème de diffusion validé : même revenu pour inédit et rediffusion.
 const JT_CC: int = 5
 const GAME_CC: int = 10
 const TALK_CC: int = 15
+const SHORTCOM_CC: int = 30
 const SERIES_CC: int = 30
+const SERIES_TELEFILM_CC: int = 40
+const TELEFILM_CC: int = 45
 const FILM_CC: int = 50
+const DOCUMENTARY_CC: int = 30
+const DOCUREALITY_CC: int = 40
+const REALITY_CC: int = 40
+const ENTERTAINMENT_CC: int = 45
+# Montant temporaire pour formats dont le tarif reste à décider.
 const OTHER_CC: int = 15
 
 var history: Array[Dictionary] = []
@@ -189,18 +198,32 @@ func _build_event(
 
 static func get_format_revenue(format_name: String) -> int:
 	var format_key: String = format_name.strip_edges().to_lower()
+	# Les formats composés sont testés avant leurs catégories générales.
+	if "docuréalité" in format_key or "docurealite" in format_key or "docu-réalité" in format_key:
+		return DOCUREALITY_CC
+	if "série-téléfilm" in format_key or "serie-telefilm" in format_key or "série téléfilm" in format_key:
+		return SERIES_TELEFILM_CC
+	if "téléfilm" in format_key or "telefilm" in format_key:
+		return TELEFILM_CC
+	if "shortcom" in format_key:
+		return SHORTCOM_CC
+	if "téléréalité" in format_key or "telerealite" in format_key or "télé-réalité" in format_key:
+		return REALITY_CC
+	if "documentaire" in format_key or "documentary" in format_key:
+		return DOCUMENTARY_CC
+	if "divertissement" in format_key or "entertainment" in format_key:
+		return ENTERTAINMENT_CC
 	if format_key == "jt" or "journal" in format_key or "information" in format_key:
 		return JT_CC
 	if "jeux tv" in format_key or "jeu tv" in format_key:
 		return GAME_CC
 	if "talk" in format_key:
 		return TALK_CC
-	if "film" in format_key or "cinéma" in format_key:
+	if "film" in format_key or "cinéma" in format_key or "cinema" in format_key:
 		return FILM_CC
-	if "série" in format_key or "serie" in format_key or "shortcom" in format_key:
+	if "série" in format_key or "serie" in format_key:
 		return SERIES_CC
 	return OTHER_CC
-
 
 static func _calculate_audience(
 	program_id: String,
