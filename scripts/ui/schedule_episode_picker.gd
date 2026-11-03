@@ -1,6 +1,8 @@
 class_name ScheduleEpisodePicker
 extends RefCounted
 
+const UIThemeManagerScript = preload("res://scripts/ui/ui_theme_manager.gd")
+
 const ScheduleEpisodeHelperScript = preload("res://scripts/ui/schedule_episode_helper.gd")
 
 const SLOT_MINUTES: int = 30
@@ -51,6 +53,7 @@ static func open(
 	var popup: PopupPanel = PopupPanel.new()
 	popup.name = "ScheduleEpisodePicker"
 	anchor.add_child(popup)
+	UIThemeManagerScript.apply_popup_theme(popup, anchor)
 
 	var margin: MarginContainer = MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 16)
@@ -680,6 +683,7 @@ static func _show_selection_error(anchor: Control) -> void:
 	dialog.title = "Jours de diffusion"
 	dialog.dialog_text = "Sélectionnez au moins un jour de diffusion pour l'automatisation."
 	anchor.add_child(dialog)
+	UIThemeManagerScript.apply_popup_theme(dialog, anchor)
 	dialog.confirmed.connect(func() -> void:
 		if is_instance_valid(dialog):
 			dialog.queue_free()
@@ -711,6 +715,7 @@ static func _show_automation_result(anchor: Control, result: Dictionary) -> void
 		]
 
 	anchor.add_child(dialog)
+	UIThemeManagerScript.apply_popup_theme(dialog, anchor)
 	dialog.confirmed.connect(func() -> void:
 		if is_instance_valid(dialog):
 			dialog.queue_free()
