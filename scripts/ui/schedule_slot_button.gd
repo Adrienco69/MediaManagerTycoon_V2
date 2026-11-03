@@ -1,6 +1,8 @@
 class_name ScheduleSlotButton
 extends Button
 
+const UIThemeManagerScript = preload("res://scripts/ui/ui_theme_manager.gd")
+
 const ScheduleProgramPickerScript = preload("res://scripts/ui/schedule_program_picker.gd")
 const ScheduleEpisodeHelperScript = preload("res://scripts/ui/schedule_episode_helper.gd")
 const ScheduleEpisodePickerScript = preload("res://scripts/ui/schedule_episode_picker.gd")
@@ -181,6 +183,7 @@ func _open_replace_confirmation(
 	dialog.ok_button_text = "Remplacer"
 	dialog.cancel_button_text = "Annuler"
 	add_child(dialog)
+	UIThemeManagerScript.apply_popup_theme(dialog, self)
 	dialog.confirmed.connect(func() -> void:
 		_perform_drop(drag_data, true)
 		if is_instance_valid(dialog):
@@ -213,6 +216,7 @@ func _open_delete_confirmation() -> void:
 	dialog.ok_button_text = "Tout supprimer" if is_automatic else "Supprimer"
 	dialog.cancel_button_text = "Annuler"
 	add_child(dialog)
+	UIThemeManagerScript.apply_popup_theme(dialog, self)
 	dialog.confirmed.connect(func() -> void:
 		var removed: bool = false
 		if is_automatic:
