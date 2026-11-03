@@ -225,6 +225,11 @@ func _show_channel_title(
 		return
 	_title_channel_selector.clear()
 	var desired_index: int = -1
+	# L'entrée Zapping ramène au tableau général du réseau MMTN.
+	if mode == "zap":
+		_title_channel_selector.add_item("Zapping", -1)
+		if selected_number == -1:
+			desired_index = 0
 	for channel: Dictionary in channels:
 		var number: int = int(channel.get("mmtn_number", -1))
 		if number < 0:
@@ -255,6 +260,9 @@ func _on_title_channel_selected(index: int) -> void:
 		_selected_grid_channel_number = number
 		_show_grid()
 	elif _title_selector_mode == "zap":
+		if number == -1:
+			_show_zap()
+			return
 		_selected_zap_channel_number = number
 		for channel: Dictionary in GameState.get_zap_channels():
 			if int(channel.get("mmtn_number", -1)) == number:
@@ -645,11 +653,11 @@ func _show_zap() -> void:
 	_clear_dynamic_pages()
 	_scroll_main_to_top()
 	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
+	# Dans la liste générale, le sélecteur affiche toujours « Zapping ».
+	# Il sélectionne ensuite la chaîne consultée dans son guide.
+	_selected_zap_channel_number = -1
 	var channels: Array[Dictionary] = _get_active_zap_channels()
-	var shown_number: int = _selected_zap_channel_number
-	if shown_number < 0 and not channels.is_empty():
-		shown_number = int(channels[0].get("mmtn_number", -1))
-	_show_channel_title("zap", channels, shown_number)
+	_show_channel_title("zap", channels, -1)
 	ZapPageControllerScript.render(
 		content_container,
 		page_description,
