@@ -9,7 +9,8 @@ static func render(
 	content_container: VBoxContainer,
 	page_description: Label,
 	channels: Array[Dictionary],
-	on_open_channel: Callable
+	on_open_channel: Callable,
+	on_open_archive: Callable = Callable()
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -44,7 +45,7 @@ static func render(
 		closed_button.disabled = show_closed
 		_clear_holder(table_holder)
 		var selected: Array[Dictionary] = closed_channels if show_closed else active_channels
-		_build_table(table_holder, selected, show_closed, on_open_channel)
+		_build_table(table_holder, selected, show_closed, on_open_channel, on_open_archive)
 
 	active_button.pressed.connect(func() -> void: show_list.call(false))
 	closed_button.pressed.connect(func() -> void: show_list.call(true))
@@ -61,7 +62,10 @@ static func clear(content_container: VBoxContainer) -> void:
 static func _filter_channels(channels: Array[Dictionary], closed: bool) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for channel: Dictionary in channels:
-		var is_closed: bool = bool(channel.get("closed", false))
+		var is_closed: bool = (
+			not bool(channel.get("is_open", true))
+			or not String(channel.get("closed_date", "")).is_empty()
+		)
 		if is_closed == closed:
 			result.append(channel.duplicate(true))
 	return result
@@ -71,7 +75,8 @@ static func _build_table(
 	parent: VBoxContainer,
 	channels: Array[Dictionary],
 	show_closed: bool,
-	on_open_channel: Callable
+	on_open_channel: Callable,
+	on_open_archive: Callable
 ) -> void:
 	if channels.is_empty():
 		var empty_label: Label = Label.new()
@@ -99,7 +104,12 @@ static func _build_table(
 			table,
 			String(channel.get("name", "")),
 			1,
-			func() -> void: on_open_channel.call(selected_channel)
+			func() -> void:
+				if show_closed and on_open_archive.is_valid():
+					on_open_archive.call(selected_channel)
+				elif not show_closed:
+					on_open_channel.call(selected_channel),
+			"Archives" if show_closed else "Guide TV"
 		)
 		_add_cell(table, String(channel.get("group", "")), 2, false)
 		_add_cell(table, String(channel.get("theme", "Généraliste")), 3, false)
@@ -132,7 +142,8 @@ static func _add_channel_cell(
 	table: GridContainer,
 	channel_name: String,
 	column: int,
-	on_open_guide: Callable
+	on_open_guide: Callable,
+	button_label: String = "Guide TV"
 ) -> void:
 	var panel: PanelContainer = _create_panel(column)
 	table.add_child(panel)
@@ -147,12 +158,14 @@ static func _add_channel_cell(
 	row.add_child(name_label)
 
 	var guide_button: Button = Button.new()
-	guide_button.text = "Guide TV"
+	guide_button.text = button_label
 	guide_button.flat = false
 	guide_button.focus_mode = Control.FOCUS_ALL
 	guide_button.custom_minimum_size = Vector2(105, 34)
 	guide_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	guide_button.pressed.connect(on_open_guide)
+	guide_button.disabled = not on_open_guide.is_valid()
+	if on_open_guide.is_valid():
+		guide_button.pressed.connect(on_open_guide)
 	row.add_child(guide_button)
 
 
