@@ -15,6 +15,7 @@ const ProductionCreationPageScript = preload("res://scripts/ui/production_creati
 const LibraryPageControllerScript = preload("res://scripts/ui/library_page_controller.gd")
 const LibraryProgramDetailControllerScript = preload("res://scripts/ui/library_program_detail_controller.gd")
 const MainContentScrollScript = preload("res://scripts/ui/main_content_scroll.gd")
+const DailyBroadcastReportScript = preload("res://scripts/ui/daily_broadcast_report.gd")
 
 @onready var background: ColorRect = $Background
 @onready var start_screen: Control = %StartScreen
@@ -54,6 +55,7 @@ const MainContentScrollScript = preload("res://scripts/ui/main_content_scroll.gd
 
 var _last_theme_day_key: int = -1
 var _main_content_scroll: ScrollContainer
+var _daily_report_button: Button
 var _save_button: Button
 var _main_menu_button: Button
 var _save_status_label: Label
@@ -87,6 +89,7 @@ func _ready() -> void:
 	_save_button = header_actions.get("save_button") as Button
 	_main_menu_button = header_actions.get("menu_button") as Button
 	_save_status_label = header_actions.get("status_label") as Label
+	_setup_daily_report_button()
 	_continue_game_button = StartMenuControllerScript.ensure_continue_button(home_panel, _continue_game)
 	_quit_game_button = StartMenuControllerScript.ensure_quit_button(home_panel, _quit_game)
 	_setup_delete_save_controls()
@@ -95,6 +98,26 @@ func _ready() -> void:
 	_connect_buttons()
 	_refresh_all()
 	_show_start_screen()
+
+
+func _setup_daily_report_button() -> void:
+	if _save_button == null:
+		return
+	var actions: HBoxContainer = _save_button.get_parent() as HBoxContainer
+	if actions == null:
+		return
+	_daily_report_button = actions.get_node_or_null("DailyReportButton") as Button
+	if _daily_report_button == null:
+		_daily_report_button = Button.new()
+		_daily_report_button.name = "DailyReportButton"
+		_daily_report_button.text = "Bilan du jour"
+		_daily_report_button.custom_minimum_size = Vector2(112, 30)
+		actions.add_child(_daily_report_button)
+		actions.move_child(_daily_report_button, _save_button.get_index())
+	_daily_report_button.pressed.connect(func() -> void:
+		if GameState.has_started_game() and game_ui.visible:
+			DailyBroadcastReportScript.open(self)
+	)
 
 
 func _setup_start_screen_gradient() -> void:
