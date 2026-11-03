@@ -22,12 +22,12 @@ static func render(
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
 	if editable:
-		# Masquer entièrement la description vide : son Label gardait une
-		# hauteur et deux espacements sous le séparateur.
+		# Le titre « Grille TV | Chaîne : » est géré par le sélecteur
+		# de l'écran principal, pas par le contrôleur de planning.
+		# Masquer complètement la description vide.
 		page_description.visible = false
 		page_description.text = ""
 		content_container.add_theme_constant_override("separation", 6)
-		_update_editable_page_title(content_container, channel)
 	else:
 		page_description.visible = true
 		page_description.text = _get_description(channel, editable)
@@ -193,12 +193,12 @@ static func render(
 			var day_heading: Label = schedule_holder.get_child(0) as Label
 			if day_heading != null:
 				for old_heading: Node in schedule_heading.get_children():
-					if old_heading != trash_target:
+					if old_heading != trash_target and old_heading != week_holder:
 						schedule_heading.remove_child(old_heading)
 						old_heading.queue_free()
 				day_heading.reparent(schedule_heading)
 				day_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				schedule_heading.move_child(day_heading, 0)
+				schedule_heading.move_child(day_heading, 1)
 
 	if editable and trash_target != null:
 		var refresh_after_delete: Callable = func() -> void:
@@ -232,6 +232,15 @@ static func render(
 	var selector_row: HBoxContainer = WeekSelectorScript.build(rebuild_schedule)
 	selector_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	week_holder.add_child(selector_row)
+
+	if editable and schedule_heading != null:
+		# La semaine rejoint le jour sélectionné ; les jours occupent seuls
+		# la première ligne et une rangée verticale est économisée.
+		week_holder.reparent(schedule_heading)
+		schedule_heading.move_child(week_holder, 0)
+		week_holder.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		week_holder.size_flags_stretch_ratio = 1.0
+		days_holder.size_flags_stretch_ratio = 1.0
 
 	rebuild_schedule.call(1)
 
