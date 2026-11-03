@@ -209,14 +209,14 @@ func _open_delete_confirmation() -> void:
 
 	var dialog: ConfirmationDialog = ConfirmationDialog.new()
 	dialog.title = "Supprimer la programmation ?" if is_automatic else "Supprimer la diffusion ?"
-	if is_automatic:
-		dialog.dialog_text = "Cette diffusion fait partie d'une programmation automatique.\nVoulez-vous supprimer toutes les diffusions automatiques liées à %s ?\nLe programme restera dans votre bibliothèque." % program_name
-	else:
-		dialog.dialog_text = "Voulez-vous supprimer %s de la grille ?\nLe programme restera dans votre bibliothèque." % program_name
 	dialog.ok_button_text = "Tout supprimer" if is_automatic else "Supprimer"
 	dialog.cancel_button_text = "Annuler"
 	add_child(dialog)
 	UIThemeManagerScript.apply_popup_theme(dialog, self)
+	var prompt: String = "Supprimer toutes les diffusions automatiques de ce programme ?" if is_automatic else "Voulez-vous retirer cette diffusion de la grille ?"
+	UIThemeManagerScript.configure_program_confirmation(
+		dialog, prompt, program_name, "Le programme restera dans votre bibliothèque."
+	)
 	dialog.confirmed.connect(func() -> void:
 		var removed: bool = false
 		if is_automatic:
@@ -237,7 +237,7 @@ func _open_delete_confirmation() -> void:
 		if is_instance_valid(dialog):
 			dialog.queue_free()
 	)
-	dialog.popup_centered(Vector2i(560, 240))
+	dialog.popup_centered(Vector2i(580, 280))
 
 
 func _remove_automatic_group(automation_id: String) -> bool:
