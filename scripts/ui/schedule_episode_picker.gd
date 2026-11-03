@@ -112,15 +112,18 @@ static func open(
 	episode_selector_button.custom_minimum_size = Vector2(0, 44)
 	manual_container.add_child(episode_selector_button)
 
-	var episode_dropdown: ItemList = ItemList.new()
+	var episode_dropdown: ScrollContainer = ScrollContainer.new()
 	episode_dropdown.visible = false
 	episode_dropdown.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	episode_dropdown.custom_minimum_size = Vector2(0, min(episode_count * 38, 300))
-	episode_dropdown.select_mode = ItemList.SELECT_SINGLE
-	episode_dropdown.allow_reselect = true
+	episode_dropdown.custom_minimum_size = Vector2(0, mini(episode_count * 40, 300))
 	manual_container.add_child(episode_dropdown)
 
-	var first_available_index: int = -1
+	var episode_items: VBoxContainer = VBoxContainer.new()
+	episode_items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	episode_items.add_theme_constant_override("separation", 4)
+	episode_dropdown.add_child(episode_items)
+
+	var first_available: bool = false
 	for global_episode: int in range(1, episode_count + 1):
 		var episode_data: Dictionary = ScheduleEpisodeHelperScript.get_episode_data(program, global_episode)
 		if episode_data.is_empty():
@@ -135,35 +138,38 @@ static func open(
 		if not future_broadcast.is_empty():
 			display_label += " | diffusion : %s" % String(future_broadcast.get("date_text", ""))
 
-		var item_index: int = episode_dropdown.add_item(display_label)
-		episode_dropdown.set_item_metadata(item_index, episode_data.duplicate(true))
-		episode_dropdown.set_item_tooltip(item_index, String(episode_data.get("label", compact_label)))
+		var already_used: bool = _episode_was_broadcast(program, episode_data) or not future_broadcast.is_empty()
+		var episode_button: Button = Button.new()
+		episode_button.text = display_label
+		episode_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		episode_button.custom_minimum_size = Vector2(0, 36)
+		episode_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		episode_button.tooltip_text = String(episode_data.get("label", compact_label))
+		_apply_episode_background(episode_button, already_used)
+		episode_items.add_child(episode_button)
 
-		var has_history: bool = _episode_was_broadcast(program, episode_data)
-		if has_history or not future_broadcast.is_empty():
-			episode_dropdown.set_item_custom_fg_color(item_index, BROADCAST_EPISODE_COLOR)
+		var captured_episode: Dictionary = episode_data.duplicate(true)
+		var captured_label: String = display_label
+		var captured_used: bool = already_used
+		episode_button.pressed.connect(func() -> void:
+			selected_episode_data = captured_episode.duplicate(true)
+			episode_selector_button.text = captured_label
+			_apply_episode_background(episode_selector_button, captured_used)
+			episode_dropdown.visible = false
+		)
 
-		if first_available_index < 0:
-			first_available_index = item_index
+		if not first_available:
+			first_available = true
+			selected_episode_data = episode_data.duplicate(true)
+			episode_selector_button.text = display_label
+			_apply_episode_background(episode_selector_button, already_used)
 
-	if first_available_index >= 0:
-		episode_dropdown.select(first_available_index)
-		selected_episode_data = episode_dropdown.get_item_metadata(first_available_index)
-		episode_selector_button.text = episode_dropdown.get_item_text(first_available_index)
-	else:
+	if not first_available:
 		episode_selector_button.text = "Aucun épisode disponible"
 		episode_selector_button.disabled = true
 
 	episode_selector_button.pressed.connect(func() -> void:
 		episode_dropdown.visible = not episode_dropdown.visible
-	)
-
-	episode_dropdown.item_selected.connect(func(index: int) -> void:
-		var metadata: Variant = episode_dropdown.get_item_metadata(index)
-		if metadata is Dictionary:
-			selected_episode_data = (metadata as Dictionary).duplicate(true)
-		episode_selector_button.text = episode_dropdown.get_item_text(index)
-		episode_dropdown.visible = false
 	)
 
 	var manual_program_button: Button = Button.new()
@@ -471,6 +477,30 @@ static func _format_schedule_date(week_number: int, day_index: int) -> String:
 	var day_of_month: int = ((week_in_month - 1) * 7) + day_index + 1
 	var month_name: String = String(GameState.MONTHS[target_month_index].get("name", "Mois"))
 	return "%d %s %04d" % [day_of_month, month_name, GameState.year]
+
+
+static func _apply_episode_background(button: Button, highlighted: bool) -> void:
+	if not highlighted:
+		button.remove_theme_stylebox_override("normal")
+		button.remove_theme_stylebox_override("hover")
+		button.remove_theme_stylebox_override("pressed")
+		return
+
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = BROADCAST_EPISODE_COLOR
+	style.border_color = BROADCAST_EPISODE_COLOR.lightened(0.20)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 12
+	style.content_margin_right = 12
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	button.add_theme_stylebox_override("normal", style)
+	button.add_theme_stylebox_override("hover", style)
+	button.add_theme_stylebox_override("pressed", style)
+	button.add_theme_color_override("font_color", Color.WHITE)
+	button.add_theme_color_override("font_hover_color", Color.WHITE)
+	button.add_theme_color_override("font_pressed_color", Color.WHITE)
 
 
 static func _episode_was_broadcast(program: Dictionary, episode_data: Dictionary) -> bool:
