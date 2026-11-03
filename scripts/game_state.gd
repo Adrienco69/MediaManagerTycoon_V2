@@ -5,6 +5,7 @@ const PlayerScheduleManagerScript = preload("res://scripts/core/player_schedule_
 const MMTNRegistryScript = preload("res://scripts/core/mmtn_registry.gd")
 const ProductionManagerScript = preload("res://scripts/core/production_manager.gd")
 const ProductionRulesScript = preload("res://scripts/core/production_rules.gd")
+const BroadcastEngineScript = preload("res://scripts/core/broadcast_engine.gd")
 
 signal time_changed
 signal credits_changed(new_value: int)
@@ -14,6 +15,7 @@ signal channel_created(channel: Dictionary)
 signal programs_changed
 signal productions_changed
 signal schedule_changed
+signal broadcast_completed(event: Dictionary)
 
 enum TimeMode {
 	PAUSED,
@@ -67,6 +69,7 @@ var _player_channel_manager: PlayerChannelManager = PlayerChannelManagerScript.n
 var _player_schedule_manager: PlayerScheduleManager = PlayerScheduleManagerScript.new()
 var _mmtn_registry: MMTNRegistry = MMTNRegistryScript.new()
 var _production_manager: ProductionManager = ProductionManagerScript.new()
+var _broadcast_engine: BroadcastEngine = BroadcastEngineScript.new()
 
 
 func _ready() -> void:
@@ -103,6 +106,7 @@ func start_new_game(new_player_name: String, new_company_name: String) -> void:
 	_player_schedule_manager.reset()
 	_mmtn_registry.reset()
 	_production_manager.reset()
+	_broadcast_engine.reset()
 
 	_emit_full_state_refresh()
 
@@ -124,6 +128,7 @@ func get_save_data() -> Dictionary:
 		"time_mode": int(time_mode),
 		"player_channels": _player_channel_manager.get_channels(),
 		"player_schedules": _player_schedule_manager.get_save_data(),
+		"broadcast_engine": _broadcast_engine.get_save_data(),
 		"mmtn_history": _mmtn_registry.get_channels(),
 		"programs": _production_manager.get_programs(),
 		"active_productions": _production_manager.get_active_productions(),
@@ -162,6 +167,7 @@ func load_save_data(data: Dictionary) -> bool:
 
 	var schedules_value: Variant = data.get("player_schedules", {})
 	_player_schedule_manager.load_data(schedules_value)
+	_broadcast_engine.load_data(data.get("broadcast_engine", {}))
 
 	var mmtn_value: Variant = data.get("mmtn_history", [])
 	var mmtn_history: Array = mmtn_value if mmtn_value is Array else []
@@ -379,6 +385,14 @@ func update_scheduled_episode(
 	return updated
 
 
+func get_broadcast_results() -> Array[Dictionary]:
+	return _broadcast_engine.get_history()
+
+
+func get_broadcast_total_revenue() -> int:
+	return _broadcast_engine.total_revenue
+
+
 func get_group_programs() -> Array[Dictionary]:
 	return _production_manager.get_programs()
 
@@ -468,6 +482,12 @@ func advance_minutes(amount: int) -> void:
 	if amount <= 0:
 		return
 
+	var start_year: int = year
+	var start_year_minute: int = (
+		((week_in_year - 1) * 7 + (day_in_week - 1)) * 1440
+		+ hour * 60 + minute
+	)
+
 	var active_before: int = _production_manager.get_active_productions().size()
 	var production_visible_change: bool = _production_manager.advance_minutes(amount)
 	var active_after: int = _production_manager.get_active_productions().size()
@@ -485,6 +505,20 @@ func advance_minutes(amount: int) -> void:
 	var days_to_advance: int = int(total_hours / 24)
 	for _i: int in range(days_to_advance):
 		_advance_one_day()
+
+	var channel: Dictionary = _player_channel_manager.get_first_channel()
+	var broadcast_count_before: int = _broadcast_engine.history.size()
+	var processed: Dictionary = _broadcast_engine.process_interval(
+		start_year, start_year_minute, amount,
+		channel, _player_schedule_manager, _production_manager
+	)
+	var revenue: int = int(processed.get("revenue", 0))
+	if revenue > 0:
+		add_credits(revenue)
+	if int(processed.get("count", 0)) > 0:
+		programs_changed.emit()
+		for index: int in range(broadcast_count_before, _broadcast_engine.history.size()):
+			broadcast_completed.emit(_broadcast_engine.history[index].duplicate(true))
 
 	time_changed.emit()
 
