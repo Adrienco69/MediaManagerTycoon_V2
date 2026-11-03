@@ -22,9 +22,14 @@ static func render(
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
 	if editable:
+		# Masquer entièrement la description vide : son Label gardait une
+		# hauteur et deux espacements sous le séparateur.
+		page_description.visible = false
 		page_description.text = ""
+		content_container.add_theme_constant_override("separation", 6)
 		_update_editable_page_title(content_container, channel)
 	else:
+		page_description.visible = true
 		page_description.text = _get_description(channel, editable)
 
 	var displayed_programs: Array[Dictionary] = _get_displayed_programs(channel, programs, editable)
