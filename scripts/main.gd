@@ -227,7 +227,8 @@ func _show_channel_title(
 	var desired_index: int = -1
 	# L'entrée Zapping ramène au tableau général du réseau MMTN.
 	if mode == "zap":
-		_title_channel_selector.add_item("Zapping", -1)
+		# OptionButton réserve -1 à un ID automatique : utiliser 0, hors des canaux MMTN.
+		_title_channel_selector.add_item("Zapping", 0)
 		if selected_number == -1:
 			desired_index = 0
 	for channel: Dictionary in channels:
@@ -260,7 +261,7 @@ func _on_title_channel_selected(index: int) -> void:
 		_selected_grid_channel_number = number
 		_show_grid()
 	elif _title_selector_mode == "zap":
-		if number == -1:
+		if number == 0:
 			_show_zap()
 			return
 		_selected_zap_channel_number = number
