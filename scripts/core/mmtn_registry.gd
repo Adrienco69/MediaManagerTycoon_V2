@@ -73,10 +73,23 @@ func load_history(history: Array) -> void:
 			_history.append(restored)
 
 
-func close_channel(mmtn_number: int, closed_date: String) -> bool:
+func close_channel(
+	mmtn_number: int,
+	closed_date: String,
+	programs_snapshot: Array[Dictionary] = []
+) -> bool:
 	for index: int in range(_history.size()):
 		if int(_history[index].get("mmtn_number", 0)) != mmtn_number:
 			continue
+		if not bool(_history[index].get("is_open", true)):
+			return false
+		var existing_programs: Variant = _history[index].get("programs", [])
+		if programs_snapshot.size() > 0:
+			_history[index]["archived_programs"] = programs_snapshot.duplicate(true)
+		elif existing_programs is Array:
+			_history[index]["archived_programs"] = (existing_programs as Array).duplicate(true)
+		else:
+			_history[index]["archived_programs"] = []
 		_history[index]["is_open"] = false
 		_history[index]["closed_date"] = closed_date
 		return true
