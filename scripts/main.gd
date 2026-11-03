@@ -663,6 +663,9 @@ func _start_production_from_form(spec: Dictionary) -> String:
 
 
 func _clear_dynamic_pages() -> void:
+	# Restaurer l'espacement et la description des autres pages.
+	content_container.add_theme_constant_override("separation", 16)
+	page_description.visible = true
 	# Les pages autres que Grille TV gardent leur défilement habituel.
 	if _main_content_scroll != null:
 		_main_content_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
