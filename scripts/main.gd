@@ -16,6 +16,7 @@ const LibraryPageControllerScript = preload("res://scripts/ui/library_page_contr
 const LibraryProgramDetailControllerScript = preload("res://scripts/ui/library_program_detail_controller.gd")
 const MainContentScrollScript = preload("res://scripts/ui/main_content_scroll.gd")
 const DailyBroadcastReportScript = preload("res://scripts/ui/daily_broadcast_report.gd")
+const ZapChannelArchiveScript = preload("res://scripts/ui/zap_channel_archive.gd")
 
 @onready var background: ColorRect = $Background
 @onready var start_screen: Control = %StartScreen
@@ -668,7 +669,19 @@ func _show_zap() -> void:
 		content_container,
 		page_description,
 		GameState.get_zap_channels(),
-		_show_zap_channel_schedule
+		_show_zap_channel_schedule,
+		_show_zap_channel_archive
+	)
+
+
+func _show_zap_channel_archive(channel: Dictionary) -> void:
+	_clear_dynamic_pages()
+	_scroll_main_to_top()
+	NavigationButtonStateScript.apply(_get_navigation_buttons(), zap_button)
+	page_title.text = "Zap'Chaine | Archives"
+	_title_channel_selector.visible = false
+	ZapChannelArchiveScript.render(
+		content_container, page_description, channel, _show_zap
 	)
 
 
@@ -798,6 +811,7 @@ func _clear_dynamic_pages() -> void:
 	GroupPageControllerScript.clear(content_container)
 	TVGridPageControllerScript.clear(content_container)
 	ZapPageControllerScript.clear(content_container)
+	ZapChannelArchiveScript.clear(content_container)
 	ProductionPageControllerScript.clear(content_container)
 	ProductionCreationPageScript.clear(content_container)
 	LibraryPageControllerScript.clear(content_container)
