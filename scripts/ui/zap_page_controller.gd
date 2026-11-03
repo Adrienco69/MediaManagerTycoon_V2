@@ -100,15 +100,12 @@ static func _build_table(
 	for channel: Dictionary in channels:
 		var selected_channel: Dictionary = channel.duplicate(true)
 		_add_cell(table, str(int(channel.get("mmtn_number", 0))), 0, false)
+		var open_action: Callable = on_open_archive if show_closed else on_open_channel
 		_add_channel_cell(
 			table,
 			String(channel.get("name", "")),
 			1,
-			func() -> void:
-				if show_closed and on_open_archive.is_valid():
-					on_open_archive.call(selected_channel)
-				elif not show_closed:
-					on_open_channel.call(selected_channel),
+			open_action.bind(selected_channel),
 			"Archives" if show_closed else "Guide TV"
 		)
 		_add_cell(table, String(channel.get("group", "")), 2, false)
