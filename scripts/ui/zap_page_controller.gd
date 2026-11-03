@@ -10,7 +10,8 @@ static func render(
 	page_description: Label,
 	channels: Array[Dictionary],
 	on_open_channel: Callable,
-	on_open_archive: Callable = Callable()
+	on_open_archive: Callable = Callable(),
+	show_closed_initial: bool = false
 ) -> void:
 	clear(content_container)
 	page_description.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -49,7 +50,7 @@ static func render(
 
 	active_button.pressed.connect(func() -> void: show_list.call(false))
 	closed_button.pressed.connect(func() -> void: show_list.call(true))
-	show_list.call(false)
+	show_list.call(show_closed_initial)
 
 
 static func clear(content_container: VBoxContainer) -> void:
