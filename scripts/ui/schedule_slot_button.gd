@@ -207,17 +207,10 @@ func _open_delete_confirmation() -> void:
 	var automation_id: String = String(source_data.get("automation_id", ""))
 	var is_automatic: bool = not automation_id.is_empty()
 
-	var dialog: ConfirmationDialog = ConfirmationDialog.new()
-	dialog.title = "Supprimer la programmation ?" if is_automatic else "Supprimer la diffusion ?"
-	dialog.ok_button_text = "Tout supprimer" if is_automatic else "Supprimer"
-	dialog.cancel_button_text = "Annuler"
-	add_child(dialog)
-	UIThemeManagerScript.apply_popup_theme(dialog, self)
+	var dialog_title: String = "Supprimer la programmation ?" if is_automatic else "Supprimer la diffusion ?"
 	var prompt: String = "Supprimer toutes les diffusions automatiques de ce programme ?" if is_automatic else "Voulez-vous retirer cette diffusion de la grille ?"
-	UIThemeManagerScript.configure_program_confirmation(
-		dialog, prompt, program_name, "Le programme restera dans votre bibliothèque."
-	)
-	dialog.confirmed.connect(func() -> void:
+	var confirm_text: String = "Tout supprimer" if is_automatic else "Supprimer"
+	var delete_action: Callable = func() -> void:
 		var removed: bool = false
 		if is_automatic:
 			removed = _remove_automatic_group(automation_id)
@@ -230,15 +223,16 @@ func _open_delete_confirmation() -> void:
 			)
 		if removed and refresh_callback.is_valid():
 			refresh_callback.call()
-		if is_instance_valid(dialog):
-			dialog.queue_free()
-	)
-	dialog.canceled.connect(func() -> void:
-		if is_instance_valid(dialog):
-			dialog.queue_free()
-	)
-	dialog.popup_centered(Vector2i(580, 280))
 
+	UIThemeManagerScript.show_program_confirmation(
+		self,
+		dialog_title,
+		prompt,
+		program_name,
+		"Le programme restera dans votre bibliothèque.",
+		confirm_text,
+		delete_action
+	)
 
 func _remove_automatic_group(automation_id: String) -> bool:
 	if automation_id.is_empty():
