@@ -101,7 +101,7 @@ static func open(
 	content.add_child(manual_container)
 
 	var manual_hint: Label = Label.new()
-	manual_hint.text = "Choisissez l'épisode à diffuser sur ce créneau. Les épisodes déjà diffusés apparaissent en orange."
+	manual_hint.text = "Choisissez l'épisode à diffuser. Orange = épisode déjà programmé ou déjà diffusé."
 	manual_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	manual_container.add_child(manual_hint)
 
@@ -130,10 +130,17 @@ static func open(
 		if compact_label.is_empty():
 			compact_label = "Épisode %d" % global_episode
 
-		var item_index: int = episode_dropdown.add_item(compact_label)
+		var future_broadcast: Dictionary = _find_next_future_broadcast(program, episode_data)
+		var display_label: String = compact_label
+		if not future_broadcast.is_empty():
+			display_label += " | diffusion : %s" % String(future_broadcast.get("date_text", ""))
+
+		var item_index: int = episode_dropdown.add_item(display_label)
 		episode_dropdown.set_item_metadata(item_index, episode_data.duplicate(true))
 		episode_dropdown.set_item_tooltip(item_index, String(episode_data.get("label", compact_label)))
-		if _episode_was_broadcast(program, episode_data):
+
+		var has_history: bool = _episode_was_broadcast(program, episode_data)
+		if has_history or not future_broadcast.is_empty():
 			episode_dropdown.set_item_custom_fg_color(item_index, BROADCAST_EPISODE_COLOR)
 
 		if first_available_index < 0:
@@ -395,6 +402,75 @@ static func open(
 			popup.queue_free()
 	)
 	popup.popup_centered(Vector2i(800, 620))
+
+
+static func _find_next_future_broadcast(program: Dictionary, episode_data: Dictionary) -> Dictionary:
+	var program_id: String = String(program.get("id", ""))
+	var global_episode: int = int(episode_data.get("episode_global", 0))
+	if program_id.is_empty() or global_episode <= 0:
+		return {}
+
+	var current_absolute_minutes: int = (
+		(((GameState.week_in_year - 1) * 7) + (GameState.day_in_week - 1)) * 1440
+		+ (GameState.hour * 60)
+		+ GameState.minute
+	)
+	var best_absolute_minutes: int = 2147483647
+	var best_result: Dictionary = {}
+
+	for player_channel: Dictionary in GameState.get_player_channels():
+		for target_week: int in range(1, 53):
+			for target_day: int in range(0, 7):
+				var day_slots: Array[Dictionary] = GameState.get_player_day_schedule(
+					player_channel,
+					target_week,
+					target_day
+				)
+				for target_slot: int in range(day_slots.size()):
+					var entry: Dictionary = day_slots[target_slot]
+					if String(entry.get("kind", "")) != "start":
+						continue
+					if String(entry.get("program_id", "")) != program_id:
+						continue
+					if int(entry.get("episode_global", 0)) != global_episode:
+						continue
+
+					var target_absolute_minutes: int = (
+						(((target_week - 1) * 7) + target_day) * 1440
+						+ (target_slot * SLOT_MINUTES)
+					)
+					if target_absolute_minutes < current_absolute_minutes:
+						continue
+					if target_absolute_minutes >= best_absolute_minutes:
+						continue
+
+					best_absolute_minutes = target_absolute_minutes
+					best_result = {
+						"week": target_week,
+						"day": target_day,
+						"slot": target_slot,
+						"date_text": _format_schedule_date(target_week, target_day)
+					}
+
+	return best_result
+
+
+static func _format_schedule_date(week_number: int, day_index: int) -> String:
+	var remaining_week: int = maxi(week_number, 1)
+	var target_month_index: int = 0
+	var week_in_month: int = remaining_week
+
+	for month_index: int in range(GameState.MONTHS.size()):
+		var month_weeks: int = int(GameState.MONTHS[month_index].get("weeks", 0))
+		if week_in_month <= month_weeks:
+			target_month_index = month_index
+			break
+		week_in_month -= month_weeks
+		target_month_index = mini(month_index + 1, GameState.MONTHS.size() - 1)
+
+	var day_of_month: int = ((week_in_month - 1) * 7) + day_index + 1
+	var month_name: String = String(GameState.MONTHS[target_month_index].get("name", "Mois"))
+	return "%d %s %04d" % [day_of_month, month_name, GameState.year]
 
 
 static func _episode_was_broadcast(program: Dictionary, episode_data: Dictionary) -> bool:
