@@ -234,13 +234,21 @@ static func render(
 	week_holder.add_child(selector_row)
 
 	if editable and schedule_heading != null:
-		# La semaine rejoint le jour sélectionné ; les jours occupent seuls
-		# la première ligne et une rangée verticale est économisée.
+		# La semaine rejoint l'en-tête des horaires.
 		week_holder.reparent(schedule_heading)
 		schedule_heading.move_child(week_holder, 0)
 		week_holder.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		week_holder.size_flags_stretch_ratio = 1.0
-		days_holder.size_flags_stretch_ratio = 1.0
+
+		# Conserver l'alignement des jours avec les plages horaires,
+		# même après déplacement du sélecteur de semaine.
+		var days_spacer: Control = Control.new()
+		days_spacer.custom_minimum_size = Vector2(220, 0)
+		days_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		days_spacer.size_flags_stretch_ratio = 1.0
+		top_row.add_child(days_spacer)
+		top_row.move_child(days_spacer, 0)
+		days_holder.size_flags_stretch_ratio = 3.0
 
 	rebuild_schedule.call(1)
 
