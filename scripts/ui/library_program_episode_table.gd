@@ -195,6 +195,10 @@ static func _get_unit_broadcasts(program: Dictionary, unit: Dictionary) -> Strin
 				text += " | %s" % channel_name
 			if not broadcast_type.is_empty():
 				text += " | %s" % broadcast_type
+			if item.has("audience_viewers"):
+				text += " | %d téléspectateurs" % int(item.get("audience_viewers", 0))
+			if item.has("revenue_cc"):
+				text += " | +%d CC" % int(item.get("revenue_cc", 0))
 			broadcasts.append(text)
 
 	if broadcasts.is_empty():
