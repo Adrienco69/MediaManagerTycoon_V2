@@ -162,7 +162,8 @@ func _build_event(
 	var broadcast_type: String = "Inédit" if first_run else "Rediffusion"
 	var recorded: bool = production_manager.record_broadcast(
 		program_id, season_number, episode_number, date_text,
-		time_text, String(channel.get("name", "Chaîne")), broadcast_type
+		time_text, String(channel.get("name", "Chaîne")), broadcast_type,
+		audience, revenue
 	)
 	if not recorded:
 		return {}
