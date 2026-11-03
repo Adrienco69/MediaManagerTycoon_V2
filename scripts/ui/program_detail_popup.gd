@@ -1,6 +1,8 @@
 class_name ProgramDetailPopup
 extends RefCounted
 
+const UIThemeManagerScript = preload("res://scripts/ui/ui_theme_manager.gd")
+
 const ProgramDetailControllerScript = preload("res://scripts/ui/library_program_detail_controller.gd")
 
 
@@ -11,6 +13,7 @@ static func open(anchor: Control, program: Dictionary) -> void:
 	var popup: PopupPanel = PopupPanel.new()
 	popup.name = "ProgramDetailPopup"
 	anchor.get_tree().root.add_child(popup)
+	UIThemeManagerScript.apply_popup_theme(popup, anchor)
 
 	var margin: MarginContainer = MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 20)
